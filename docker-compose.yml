@@ -1,16 +1,35 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: steakboss-postgres
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
     restart: unless-stopped
+    expose:
+      - "3000"
     environment:
-      POSTGRES_USER: steakboss
-      POSTGRES_PASSWORD: steakboss_dev_password
-      POSTGRES_DB: steakboss_ecommerce
-    ports:
-      - "5432:5432"
+      - NODE_ENV=production
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=${DATABASE_URL:-file:/app/data/steakboss.db}
+      - SESSION_SECRET=${SESSION_SECRET:-change-this-steakboss-session-secret-32chars}
+      - CRON_SECRET=${CRON_SECRET:-change-this-cron-secret}
+      - NEXT_PUBLIC_APP_URL=${SERVICE_URL_WEB_3000:-http://localhost:3000}
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET:-}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN:-}
+      - LINE_STAFF_GROUP_ID=${LINE_STAFF_GROUP_ID:-}
+      - SLIP_VERIFY_PROVIDER=${SLIP_VERIFY_PROVIDER:-sandbox}
+      - SLIP_VERIFY_API_URL=${SLIP_VERIFY_API_URL:-}
+      - SLIP_VERIFY_API_KEY=${SLIP_VERIFY_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash}
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - steakboss_data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
 
 volumes:
-  pgdata:
+  steakboss_data:
