@@ -1,0 +1,231 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String       @id @default(cuid())
+  role         String       @default("CUSTOMER") // CUSTOMER | OWNER | ADMIN | PACKER
+  name         String
+  phone        String?      @unique
+  email        String?      @unique
+  lineUserId   String?      @unique
+  passwordHash String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  addresses    Address[]
+  orders       Order[]
+  chatThreads  ChatThread[]
+}
+
+model Address {
+  id            String  @id @default(cuid())
+  userId        String
+  label         String  @default("บ้าน")
+  recipientName String
+  phone         String
+  addressLine   String
+  postalCode    String
+  isDefault     Boolean @default(false)
+  user          User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  slug      String    @unique
+  name      String
+  sortOrder Int       @default(0)
+  products  Product[]
+}
+
+model Product {
+  id                String          @id @default(cuid())
+  slug              String          @unique
+  sku               String          @unique
+  name              String
+  subtitle          String
+  description       String
+  categoryId        String
+  weightGrams       Int
+  priceBaht         Int
+  costBaht          Int             @default(0)
+  stockQty          Int             @default(0)
+  lowStockThreshold Int             @default(10)
+  isBundle          Boolean         @default(false)
+  isNew             Boolean         @default(false)
+  isActive          Boolean         @default(true)
+  tag               String          @default("")
+  platedImgUrl      String
+  packImgUrl        String
+  wideImgUrl        String?
+  sortOrder         Int             @default(0)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  category          Category        @relation(fields: [categoryId], references: [id])
+  bundleComponents  BundleItem[]    @relation("BundleParent")
+  includedInBundles BundleItem[]    @relation("BundleChild")
+  stockMovements    StockMovement[]
+  orderItems        OrderItem[]
+}
+
+model BundleItem {
+  id              String  @id @default(cuid())
+  parentProductId String
+  childProductId  String
+  quantity        Int     @default(1)
+  parent          Product @relation("BundleParent", fields: [parentProductId], references: [id], onDelete: Cascade)
+  child           Product @relation("BundleChild", fields: [childProductId], references: [id], onDelete: Cascade)
+
+  @@unique([parentProductId, childProductId])
+}
+
+model StockMovement {
+  id        String   @id @default(cuid())
+  productId String
+  deltaQty  Int
+  type      String   // RESTOCK | RESERVE | DEDUCT | RELEASE | ADJUST
+  reason    String   @default("")
+  orderNo   String?
+  actorId   String?
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId, createdAt])
+}
+
+model Coupon {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  type        String    // FIXED | PERCENT | FREE_SHIP
+  value       Int
+  minSubtotal Int       @default(0)
+  maxUses     Int?
+  usedCount   Int       @default(0)
+  expiresAt   DateTime?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+}
+
+model StoreSetting {
+  id                String   @id @default("default")
+  bkkShipBaht       Int      @default(60)
+  upcShipBaht       Int      @default(120)
+  freeShipThreshold Int      @default(990)
+  codFeeBaht        Int      @default(20)
+  phone             String   @default("081-234-5678")
+  lineId            String   @default("@steakboss")
+  lineOaUrl         String   @default("https://line.me/R/ti/p/@steakboss")
+  promptpayId       String   @default("0812345678")
+  promptpayName     String   @default("บจก. สเต็กบอสส์ต้นตำรับ")
+  facebookPage      String   @default("steakbossoriginal")
+  unpaidExpireHours Int      @default(24)
+  updatedAt         DateTime @updatedAt
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  orderNo        String       @unique
+  userId         String?
+  channel        String       @default("WEB") // WEB | LINE
+  status         String       @default("PENDING_PAYMENT")
+  customerName   String
+  customerPhone  String
+  customerEmail  String       @default("")
+  deliveryMethod String       @default("COLD_CHAIN") // COLD_CHAIN | FACTORY_PICKUP
+  shippingZone   String       @default("BKK") // BKK | UPC | PICKUP
+  postalCode     String       @default("")
+  addressText    String       @default("")
+  note           String       @default("")
+  subtotalBaht   Int
+  discountBaht   Int          @default(0)
+  shippingBaht   Int          @default(0)
+  codFeeBaht     Int          @default(0)
+  totalBaht      Int
+  couponCode     String?
+  paymentMethod  String       @default("PROMPTPAY") // PROMPTPAY | COD
+  carrier        String       @default("")
+  trackingNo     String       @default("")
+  codSettled     Boolean      @default(false)
+  expiresAt      DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User?        @relation(fields: [userId], references: [id])
+  items          OrderItem[]
+  events         OrderEvent[]
+  payments       Payment[]
+
+  @@index([status, createdAt])
+  @@index([customerPhone])
+}
+
+model OrderItem {
+  id            String  @id @default(cuid())
+  orderId       String
+  productId     String
+  productName   String
+  unitPriceBaht Int
+  unitCostBaht  Int     @default(0)
+  quantity      Int
+  lineTotalBaht Int
+  order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product @relation(fields: [productId], references: [id])
+}
+
+model OrderEvent {
+  id        String   @id @default(cuid())
+  orderId   String
+  status    String
+  note      String   @default("")
+  actorId   String?
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id           String    @id @default(cuid())
+  orderId      String
+  method       String
+  status       String    @default("PENDING") // PENDING | VERIFIED | REJECTED
+  amountBaht   Int
+  slipUrl      String?
+  slipTransRef String?   @unique
+  slipHash     String?   @unique
+  provider     String    @default("sandbox")
+  verifiedById String?
+  rejectReason String?
+  verifiedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  order        Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model ChatThread {
+  id              String        @id @default(cuid())
+  channel         String        // WEB | LINE
+  externalId      String
+  customerName    String        @default("ลูกค้าหน้าร้าน")
+  userId          String?
+  mode            String        @default("BOT") // BOT | HUMAN
+  assignedAdminId String?
+  lastMessageAt   DateTime      @default(now())
+  createdAt       DateTime      @default(now())
+  user            User?         @relation(fields: [userId], references: [id])
+  messages        ChatMessage[]
+
+  @@unique([channel, externalId])
+}
+
+model ChatMessage {
+  id        String     @id @default(cuid())
+  threadId  String
+  sender    String     // CUSTOMER | BOT | ADMIN
+  content   String
+  mediaUrl  String?
+  createdAt DateTime   @default(now())
+  thread    ChatThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+}

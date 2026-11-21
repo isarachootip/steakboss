@@ -1,0 +1,46 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 76px;
+}
+
+body {
+  background-color: #151211;
+  color: #f7f0ea;
+  overflow-x: clip;
+}
+
+@layer components {
+  .sb-btn {
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-full bg-sb-pink text-[#2a0618] font-display font-bold text-base transition hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .sb-btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-full border border-sb-line text-sb-ink font-display font-semibold text-base transition hover:bg-sb-panel2 disabled:opacity-40;
+  }
+  .sb-btn-dark {
+    @apply inline-flex items-center justify-center gap-2 min-h-[40px] px-4 rounded-full bg-sb-panel2 text-sb-ink font-display font-semibold text-sm transition hover:bg-sb-line disabled:opacity-40;
+  }
+  .sb-input {
+    @apply w-full min-h-[44px] px-3.5 py-2.5 rounded-xl border border-sb-line bg-[#120f0e] text-sb-ink placeholder:text-sb-mute/60 focus:outline-none focus:border-sb-pink;
+  }
+  .sb-panel {
+    @apply bg-sb-panel border border-sb-line rounded-2xl p-5;
+  }
+}
+
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}

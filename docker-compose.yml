@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: steakboss-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: steakboss
+      POSTGRES_PASSWORD: steakboss_dev_password
+      POSTGRES_DB: steakboss_ecommerce
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
