@@ -29,6 +29,8 @@ COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/src/lib/auth/password.ts ./src/lib/auth/password.ts
+COPY --from=builder /app/src/domain ./src/domain
+COPY --from=builder /app/src/schemas ./src/schemas
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/next.config.ts ./next.config.ts
 

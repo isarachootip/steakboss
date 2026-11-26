@@ -229,3 +229,40 @@ model ChatMessage {
 
   @@index([threadId, createdAt])
 }
+
+model LandingContent {
+  id                String   @id @default("default")
+  eyebrow           String
+  headline          String
+  subheadline       String
+  heroImgUrl        String
+  heroImgAlt        String
+  packCardImgUrl    String
+  packCardCaption   String
+  badgesJson        String
+  primaryCtaLabel   String
+  primaryCtaHref    String
+  secondaryCtaLabel String
+  secondaryCtaHref  String
+  updatedAt         DateTime @updatedAt
+}
+
+model CookingGuide {
+  id             String   @id @default(cuid())
+  slug           String   @unique
+  title          String
+  equipmentLabel String
+  summary        String
+  tempLabel      String   @default("")
+  durationLabel  String   @default("")
+  coverImgUrl    String   @default("")
+  videoUrl       String   @default("")
+  stepsJson      String
+  tipsJson       String
+  sortOrder      Int      @default(0)
+  isPublished    Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isPublished, sortOrder])
+}

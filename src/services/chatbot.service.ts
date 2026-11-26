@@ -1,8 +1,13 @@
 import { db } from "@/lib/db";
 import { listCatalogProducts } from "./product.service";
 import { getStoreSettings } from "./settings.service";
+import { listPublishedGuides } from "./content.service";
 import { lookupOrderForTracking } from "./order.service";
 import { resolveShippingZone, ZONE_LABELS } from "@/domain/shipping";
+import {
+  formatGuideChatReply,
+  matchGuideForChatQuery,
+} from "@/domain/content-defaults";
 import { generateBossBotAiReply } from "./adapters/llm.adapter";
 import { pushLineMessage } from "./adapters/line.adapter";
 
@@ -43,7 +48,12 @@ async function buildRuleReply(text: string): Promise<string> {
   if (/ติดตาม|สถานะ|พัสดุ|ถึงไหน|track/.test(s)) {
     return 'พิมพ์เลขคำสั่งซื้อและเบอร์ 4 ตัวท้ายได้เลยครับ เช่น "SB261121-AB12 1234"';
   }
-  if (/ปรุง|ย่าง|ทอด|ทำยังไง|ละลาย|หม้อทอด/.test(s)) {
+  const guides = await listPublishedGuides();
+  const matchedGuide = matchGuideForChatQuery(text, guides);
+  if (matchedGuide) {
+    return formatGuideChatReply(matchedGuide, process.env.NEXT_PUBLIC_APP_URL);
+  }
+  if (/ปรุง|ย่าง|ทอด|ทำยังไง|ละลาย|หม้อทอด|ไมโครเวฟ|เวฟ/.test(s)) {
     return "ละลายในช่องเย็นข้ามคืน (หรือแช่ทั้งซองในน้ำเย็น 30–40 นาที)\nกระทะไฟกลางค่อนแรง ข้างละ 4–6 นาที หรือหม้อทอดไร้น้ำมัน 180°C 12–15 นาที\nสุกทั่ว ไก่ 74°C หมู 70°C พัก 3 นาทีแล้วเสิร์ฟครับ";
   }
   if (/เก็บ|แช่แข็ง|ฟรีซ/.test(s)) {
@@ -68,9 +78,13 @@ async function buildRuleReply(text: string): Promise<string> {
     return `เมนูสเต็กหมักพร้อมย่าง Steakboss ครับ\n${lines.join("\n")}`;
   }
 
+  const guideHints = guides
+    .map((g) => `${g.equipmentLabel}: ${g.tempLabel} ${g.durationLabel} (/guides/${g.slug})`)
+    .join(" | ");
   const sysPrompt = `คุณคือ "บอสบอท" ผู้ช่วยร้าน Steakboss (สเต็กหมักแช่แข็ง -18°C จ.อ่างทอง) ตอบภาษาไทยสุภาพ ลงท้ายครับ สั้นไม่เกิน 5 บรรทัด ห้ามแต่งราคาเอง
 สินค้า: ${products.map((p) => `${p.name} ${p.weightGrams}g ฿${p.priceBaht}`).join(", ")}
-ค่าส่งรถเย็น: กทม. ฿${settings.bkkShipBaht}, ตจว. ฿${settings.upcShipBaht}, ส่งฟรีเมื่อครบ ฿${settings.freeShipThreshold}, COD +฿${settings.codFeeBaht}`;
+ค่าส่งรถเย็น: กทม. ฿${settings.bkkShipBaht}, ตจว. ฿${settings.upcShipBaht}, ส่งฟรีเมื่อครบ ฿${settings.freeShipThreshold}, COD +฿${settings.codFeeBaht}
+วิธีปรุง: ${guideHints}`;
   const aiText = await generateBossBotAiReply(sysPrompt, text);
   if (aiText) return aiText;
 

@@ -41,4 +41,18 @@ describe("LINE & BossBot chat service", () => {
 
     await db.chatThread.delete({ where: { id: q1.threadId } });
   });
+
+  it("answers air-fryer cooking questions dynamically from published CookingGuide with share link", async () => {
+    const externalId = `test-cook-${Date.now()}`;
+    const q = await handleIncomingChatMessage({
+      channel: "WEB",
+      externalId,
+      content: "ใช้หม้อทอดไร้น้ำมัน กี่องศา กี่นาทีครับ",
+    });
+    expect(q.mode).toBe("BOT");
+    expect(q.reply).toContain("180°C");
+    expect(q.reply).toContain("/guides/air-fryer");
+
+    await db.chatThread.delete({ where: { id: q.threadId } });
+  });
 });

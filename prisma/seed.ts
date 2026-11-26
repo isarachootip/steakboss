@@ -1,136 +1,15 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/lib/auth/password";
+import {
+  DEFAULT_COOKING_GUIDES,
+  DEFAULT_LANDING_CONTENT,
+} from "../src/domain/content-defaults";
+import { SEED_CATEGORIES, SEED_PRODUCTS } from "./seed-catalog";
 
 const prisma = new PrismaClient();
 
-const CATEGORIES = [
-  { slug: "pork", name: "หมู", sortOrder: 1 },
-  { slug: "chicken", name: "ไก่", sortOrder: 2 },
-  { slug: "clean", name: "ไก่คลีน", sortOrder: 3 },
-  { slug: "premium", name: "พรีเมียม", sortOrder: 4 },
-  { slug: "set", name: "เซ็ตคุ้ม", sortOrder: 5 },
-];
-
-const PRODUCTS = [
-  {
-    slug: "pork-chop-kp",
-    sku: "SB-KP-185",
-    name: "สเต็กหมูพอร์คชอป KP",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "pork",
-    weightGrams: 185,
-    priceBaht: 89,
-    costBaht: 52,
-    stockQty: 80,
-    tag: "ขายดี",
-    isNew: false,
-    isBundle: false,
-    platedImgUrl: "/images/products/kp-plated.jpg",
-    packImgUrl: "/images/products/kp-pack.jpg",
-    description:
-      "หมูพอร์คชอปติดกระดูกชิ้นหนา หมักพริกไทยดำจนเข้าเนื้อ ย่างแล้วขอบมันหอม เนื้อฉ่ำ เข้ากับซอสพริกไทยดำ เฟรนช์ฟรายส์ และขนมปังกระเทียม",
-    sortOrder: 1,
-  },
-  {
-    slug: "tender-pork-big",
-    sku: "SB-PORK-140",
-    name: "หมูนุ่ม BIG",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "pork",
-    weightGrams: 140,
-    priceBaht: 69,
-    costBaht: 39,
-    stockQty: 90,
-    tag: "",
-    isNew: false,
-    isBundle: false,
-    platedImgUrl: "/images/products/pork-plated.jpg",
-    packImgUrl: "/images/products/pork-pack.jpg",
-    description:
-      "หมูชิ้นใหญ่ เนื้อนุ่มพิเศษ หมักพริกไทยดำรสกลมกล่อม ย่างง่าย สุกไว เหมาะกับมื้อเย็นรีบ ๆ หรือทำข้าวกล่อง",
-    sortOrder: 2,
-  },
-  {
-    slug: "chicken-steak-big",
-    sku: "SB-CHK-180",
-    name: "สเต็กไก่นุ่ม BIG",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "chicken",
-    weightGrams: 180,
-    priceBaht: 69,
-    costBaht: 38,
-    stockQty: 100,
-    tag: "",
-    isNew: false,
-    isBundle: false,
-    platedImgUrl: "/images/products/chk-plated.jpg",
-    packImgUrl: "/images/products/chk-pack.jpg",
-    description:
-      "สเต็กไก่ชิ้นโต เนื้อไก่ 85% เครื่องหมัก 15% นุ่มชุ่มฉ่ำ ย่างแล้วหนังเป็นลายสวย เสิร์ฟพร้อมซอสพริกไทยดำ",
-    sortOrder: 3,
-  },
-  {
-    slug: "easy-clean-chicken-p",
-    sku: "SB-CLEAN-170",
-    name: "อีซี่ ไก่คลีน P",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "clean",
-    weightGrams: 170,
-    priceBaht: 59,
-    costBaht: 34,
-    stockQty: 85,
-    tag: "สายคลีน",
-    isNew: false,
-    isBundle: false,
-    platedImgUrl: "/images/products/clean-plated.jpg",
-    packImgUrl: "/images/products/clean-pack.jpg",
-    description:
-      "อกไก่หมักพริกไทยดำรสเบา สำหรับคนคุมอาหาร ย่างคู่สลัดผัก มะเขือเทศ และบรอกโคลี ได้มื้อโปรตีนที่ไม่จืด",
-    sortOrder: 4,
-  },
-  {
-    slug: "chicken-steak-premium",
-    sku: "SB-PREM-360",
-    name: "Chicken Steak พรีเมียม",
-    subtitle: "หมักสมุนไพรพริกไทย",
-    catSlug: "premium",
-    weightGrams: 360,
-    priceBaht: 159,
-    costBaht: 92,
-    stockQty: 50,
-    tag: "",
-    isNew: true,
-    isBundle: false,
-    platedImgUrl: "/images/products/prem-plated.jpg",
-    packImgUrl: "/images/products/prem-pack.jpg",
-    wideImgUrl: "/images/products/prem-wide.jpg",
-    description:
-      "ไลน์ใหม่แพ็คดำทอง สเต็กไก่ชิ้นใหญ่ 360 กรัม หมักสมุนไพรและพริกไทย ย่างแล้วหอมกลิ่นเฮิร์บ เนื้อฉ่ำ หั่นแบ่งทานได้ 2 ที่",
-    sortOrder: 5,
-  },
-  {
-    slug: "best-seller-set-4",
-    sku: "SB-SET-4",
-    name: "เซ็ตรวมฮิต 4 ซอง",
-    subtitle: "KP + หมูนุ่ม + ไก่นุ่ม + ไก่คลีน",
-    catSlug: "set",
-    weightGrams: 675,
-    priceBaht: 259,
-    costBaht: 163,
-    stockQty: 0,
-    tag: "",
-    isNew: true,
-    isBundle: true,
-    platedImgUrl: "/images/products/set-plated.jpg",
-    packImgUrl: "/images/products/set-pack.jpg",
-    description:
-      "ได้ครบ 4 รสชาติขายดีในกล่องเดียว ลองให้ทั่วก่อนเลือกตัวโปรด หรือสต็อกไว้ในช่องฟรีซให้มีสเต็กพร้อมย่างทั้งสัปดาห์",
-    sortOrder: 6,
-  },
-];
-
 async function main() {
-  for (const cat of CATEGORIES) {
+  for (const cat of SEED_CATEGORIES) {
     await prisma.category.upsert({
       where: { slug: cat.slug },
       update: { name: cat.name, sortOrder: cat.sortOrder },
@@ -142,7 +21,7 @@ async function main() {
     (await prisma.category.findMany()).map((c) => [c.slug, c.id])
   );
 
-  for (const p of PRODUCTS) {
+  for (const p of SEED_PRODUCTS) {
     const categoryId = catMap.get(p.catSlug)!;
     const { catSlug: _, ...data } = p;
     await prisma.product.upsert({
@@ -184,6 +63,30 @@ async function main() {
     update: {},
     create: { id: "default" },
   });
+
+  const { badges, ...landingRest } = DEFAULT_LANDING_CONTENT;
+  await prisma.landingContent.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      ...landingRest,
+      badgesJson: JSON.stringify(badges),
+    },
+  });
+
+  for (const guide of DEFAULT_COOKING_GUIDES) {
+    const { steps, tips, ...guideRest } = guide;
+    await prisma.cookingGuide.upsert({
+      where: { slug: guide.slug },
+      update: {},
+      create: {
+        ...guideRest,
+        stepsJson: JSON.stringify(steps),
+        tipsJson: JSON.stringify(tips),
+      },
+    });
+  }
 
   await prisma.coupon.upsert({
     where: { code: "BOSS50" },
@@ -230,7 +133,7 @@ async function main() {
     });
   }
 
-  console.log("Seed completed: 5 categories, 6 products (1 bundle), 1 coupon, 3 staff accounts.");
+  console.log("Seed completed: catalog, settings, landing content, 4 cooking guides, staff accounts.");
 }
 
 main()

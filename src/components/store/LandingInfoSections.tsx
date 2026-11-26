@@ -1,7 +1,10 @@
 import Link from "next/link";
+import type { CookingGuideDto } from "@/schemas/content.schema";
 import { formatBaht } from "@/lib/format";
+import { CookingGuidesTabs } from "./CookingGuidesTabs";
 
 interface LandingInfoProps {
+  guides: CookingGuideDto[];
   bkkShipBaht: number;
   upcShipBaht: number;
   freeShipThreshold: number;
@@ -13,26 +16,7 @@ interface LandingInfoProps {
 export function LandingInfoSections(props: LandingInfoProps) {
   return (
     <>
-      <section id="cook" className="py-16 sm:py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-        <h2 className="font-display font-extrabold text-3xl sm:text-4xl">
-          ย่างยังไงให้ฉ่ำแบบร้าน
-        </h2>
-        <p className="text-sb-mute mt-1">ทุกซองหมักมาแล้ว ไม่ต้องเติมเครื่องปรุง</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-7">
-          {[
-            ["1", "ละลาย", "ย้ายลงช่องเย็นข้ามคืน หรือแช่ทั้งซองในน้ำเย็น 30–40 นาที"],
-            ["2", "ย่างไฟกลางค่อนแรง", "ทาน้ำมันบาง ๆ ย่างข้างละ 4–6 นาที หรือหม้อทอดไร้น้ำมัน 180°C 12–15 นาที"],
-            ["3", "เช็กให้สุกทั่ว", "แกนกลางไก่ 74°C หมู 70°C ไม่มีน้ำสีชมพูไหลออก"],
-            ["4", "พัก แล้วเสิร์ฟ", "พักเนื้อ 3 นาทีให้น้ำกลับเข้าเนื้อ ราดซอสพริกไทยดำ เคียงสลัดและเฟรนช์ฟรายส์"],
-          ].map(([num, title, desc]) => (
-            <div key={num} className="sb-panel space-y-2">
-              <p className="font-display font-extrabold text-4xl text-sb-pink">{num}</p>
-              <h3 className="font-display font-bold text-lg">{title}</h3>
-              <p className="text-sm text-sb-mute">{desc}</p>
-            </div>
-          ))}
-        </div>
-      </section>
+      <CookingGuidesTabs guides={props.guides} />
 
       <section id="ship" className="py-16 sm:py-20 px-4 sm:px-6 bg-sb-bgDeep">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">

@@ -27,7 +27,10 @@ export function StoreHeader() {
             เมนูทั้งหมด
           </Link>
           <Link href="/#cook" className="px-3 py-2 rounded-full hover:bg-sb-panel2">
-            วิธีปรุง
+            วิธีปรุง & หม้อทอด
+          </Link>
+          <Link href="/guides" className="px-3 py-2 rounded-full hover:bg-sb-panel2">
+            คู่มือแนะนำ
           </Link>
           <Link href="/#ship" className="px-3 py-2 rounded-full hover:bg-sb-panel2">
             ค่าจัดส่ง
@@ -60,6 +63,7 @@ export function StoreHeader() {
       <div className="flex md:hidden gap-1.5 overflow-x-auto px-4 pb-2.5 text-xs font-semibold">
         <Link href="/#menu" className="shrink-0 px-3 py-1.5 rounded-full bg-sb-panel2">เมนู</Link>
         <Link href="/#cook" className="shrink-0 px-3 py-1.5 rounded-full bg-sb-panel2">วิธีปรุง</Link>
+        <Link href="/guides" className="shrink-0 px-3 py-1.5 rounded-full bg-sb-panel2">คู่มือหม้อทอด</Link>
         <Link href="/#ship" className="shrink-0 px-3 py-1.5 rounded-full bg-sb-panel2">ค่าส่ง</Link>
         <Link href="/track" className="shrink-0 px-3 py-1.5 rounded-full bg-sb-panel2">ติดตามพัสดุ</Link>
         <Link href="/account" className="shrink-0 px-3 py-1.5 rounded-full bg-sb-panel2">บัญชีฉัน</Link>

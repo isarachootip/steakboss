@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
+  BookOpen,
   ShoppingCart,
   Users,
   MessageSquare,
@@ -14,9 +15,22 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-const NAV_ITEMS = [
+interface NavItem {
+  href: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  roles?: readonly string[];
+}
+
+const NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin", label: "ภาพรวม", icon: LayoutDashboard },
   { href: "/admin/products", label: "สินค้า & สต็อก", icon: Package },
+  {
+    href: "/admin/content",
+    label: "เนื้อหา & วิธีปรุง",
+    icon: BookOpen,
+    roles: ["OWNER", "ADMIN"],
+  },
   { href: "/admin/orders", label: "คำสั่งซื้อ & จัดส่ง", icon: ShoppingCart },
   { href: "/admin/inbox", label: "แชท LINE & Web", icon: MessageSquare },
   { href: "/admin/customers", label: "ลูกค้า CRM", icon: Users },
@@ -58,7 +72,9 @@ export function AdminSidebar({
       </div>
 
       <nav className="flex lg:flex-col gap-1 overflow-x-auto pb-1 lg:pb-0">
-        {NAV_ITEMS.map((item) => {
+        {NAV_ITEMS.filter(
+          (item) => !item.roles || item.roles.includes(userRole)
+        ).map((item) => {
           const active =
             item.href === "/admin"
               ? pathname === "/admin"
