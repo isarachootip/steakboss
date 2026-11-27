@@ -13,7 +13,7 @@ COPY . .
 ENV DATABASE_URL="file:/tmp/build.db"
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npx prisma generate
-RUN npx prisma db push --skip-generate
+RUN npx prisma db push --skip-generate --accept-data-loss
 RUN npm run build
 
 FROM base AS runner
@@ -28,7 +28,7 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/src/lib/auth/password.ts ./src/lib/auth/password.ts
+COPY --from=builder /app/src/lib ./src/lib
 COPY --from=builder /app/src/domain ./src/domain
 COPY --from=builder /app/src/schemas ./src/schemas
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
@@ -37,4 +37,4 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 RUN mkdir -p /app/data
 EXPOSE 3000
 
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npx tsx prisma/seed.ts && npm run start"]
+CMD ["sh", "-c", "npx prisma db push --skip-generate --accept-data-loss && npx tsx prisma/seed.ts && npm run start"]

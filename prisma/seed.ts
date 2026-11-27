@@ -8,6 +8,9 @@ import { SEED_CATEGORIES, SEED_PRODUCTS } from "./seed-catalog";
 
 const prisma = new PrismaClient();
 
+const LEGACY_DEMO_PRODUCT_SLUGS = ["chicken-steak-premium"];
+const LEGACY_DEMO_CATEGORY_SLUGS = ["clean", "premium"];
+
 async function main() {
   for (const cat of SEED_CATEGORIES) {
     await prisma.category.upsert({
@@ -21,34 +24,36 @@ async function main() {
     (await prisma.category.findMany()).map((c) => [c.slug, c.id])
   );
 
-  const validSlugs = new Set(SEED_PRODUCTS.map((p) => p.slug));
   for (const p of SEED_PRODUCTS) {
     const categoryId = catMap.get(p.catSlug)!;
-    const { catSlug: _, ...data } = p;
+    const { catSlug: _, stockQty, costBaht, ...restData } = p;
     await prisma.product.upsert({
       where: { slug: p.slug },
-      update: { ...data, categoryId },
-      create: { ...data, categoryId },
+      update: { ...restData, categoryId },
+      create: { ...restData, stockQty, costBaht, categoryId },
     });
   }
 
-  // Clean up obsolete legacy demo products/categories that have no order history
-  const obsoleteProducts = await prisma.product.findMany({
-    where: {
-      slug: { notIn: Array.from(validSlugs) },
-      orderItems: { none: {} },
-    },
-    select: { id: true },
-  });
-  if (obsoleteProducts.length > 0) {
-    await prisma.product.deleteMany({
-      where: { id: { in: obsoleteProducts.map((o) => o.id) } },
+  // Safely retire legacy demo SKU without touching admin-created items or breaking order history
+  for (const legacySlug of LEGACY_DEMO_PRODUCT_SLUGS) {
+    const legacy = await prisma.product.findUnique({
+      where: { slug: legacySlug },
+      include: { _count: { select: { orderItems: true } } },
     });
+    if (!legacy) continue;
+    if (legacy._count.orderItems === 0) {
+      await prisma.product.delete({ where: { id: legacy.id } });
+    } else {
+      await prisma.product.update({
+        where: { id: legacy.id },
+        data: { isActive: false },
+      });
+    }
   }
-  const validCatSlugs = SEED_CATEGORIES.map((c) => c.slug);
+
   await prisma.category.deleteMany({
     where: {
-      slug: { notIn: validCatSlugs },
+      slug: { in: LEGACY_DEMO_CATEGORY_SLUGS },
       products: { none: {} },
     },
   });
