@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
 
-export type UserRole = "CUSTOMER" | "OWNER" | "ADMIN" | "PACKER";
+export type UserRole = "CUSTOMER" | "WHOLESALE" | "OWNER" | "ADMIN" | "PACKER";
 
 export interface SessionPayload {
   userId: string;

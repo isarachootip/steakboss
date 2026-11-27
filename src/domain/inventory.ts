@@ -1,3 +1,5 @@
+import { multiplyBaht, roundBaht } from "./money";
+
 export interface BundleComponentStock {
   childProductId: string;
   quantity: number;
@@ -46,10 +48,10 @@ export function computeBundleSavings(
   components: Array<{ quantity: number; childPriceBaht: number }>
 ): number {
   const regularTotal = components.reduce(
-    (sum, c) => sum + c.childPriceBaht * c.quantity,
+    (sum, c) => roundBaht(sum + multiplyBaht(c.childPriceBaht, c.quantity)),
     0
   );
-  return Math.max(0, regularTotal - bundlePriceBaht);
+  return roundBaht(Math.max(0, regularTotal - bundlePriceBaht));
 }
 
 export function expandStockDeductions(lines: CartStockLine[]): SkuDeduction[] {

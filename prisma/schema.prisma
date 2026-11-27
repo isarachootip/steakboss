@@ -9,7 +9,7 @@ datasource db {
 
 model User {
   id           String       @id @default(cuid())
-  role         String       @default("CUSTOMER") // CUSTOMER | OWNER | ADMIN | PACKER
+  role         String       @default("CUSTOMER") // CUSTOMER | WHOLESALE | OWNER | ADMIN | PACKER
   name         String
   phone        String?      @unique
   email        String?      @unique
@@ -43,33 +43,37 @@ model Category {
 }
 
 model Product {
-  id                String          @id @default(cuid())
-  slug              String          @unique
-  sku               String          @unique
-  name              String
-  subtitle          String
-  description       String
-  categoryId        String
-  weightGrams       Int
-  priceBaht         Int
-  costBaht          Int             @default(0)
-  stockQty          Int             @default(0)
-  lowStockThreshold Int             @default(10)
-  isBundle          Boolean         @default(false)
-  isNew             Boolean         @default(false)
-  isActive          Boolean         @default(true)
-  tag               String          @default("")
-  platedImgUrl      String
-  packImgUrl        String
-  wideImgUrl        String?
-  sortOrder         Int             @default(0)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  category          Category        @relation(fields: [categoryId], references: [id])
-  bundleComponents  BundleItem[]    @relation("BundleParent")
-  includedInBundles BundleItem[]    @relation("BundleChild")
-  stockMovements    StockMovement[]
-  orderItems        OrderItem[]
+  id                 String          @id @default(cuid())
+  slug               String          @unique
+  sku                String          @unique
+  name               String
+  subtitle           String
+  description        String
+  categoryId         String
+  weightGrams        Int
+  priceBaht          Float
+  wholesalePriceBaht Float           @default(0)
+  bulkPriceBaht      Float?
+  bulkMinQty         Int             @default(0)
+  packSize           Int             @default(1)
+  costBaht           Float           @default(0)
+  stockQty           Int             @default(0)
+  lowStockThreshold  Int             @default(10)
+  isBundle           Boolean         @default(false)
+  isNew              Boolean         @default(false)
+  isActive           Boolean         @default(true)
+  tag                String          @default("")
+  platedImgUrl       String
+  packImgUrl         String
+  wideImgUrl         String?
+  sortOrder          Int             @default(0)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  category           Category        @relation(fields: [categoryId], references: [id])
+  bundleComponents   BundleItem[]    @relation("BundleParent")
+  includedInBundles  BundleItem[]    @relation("BundleChild")
+  stockMovements     StockMovement[]
+  orderItems         OrderItem[]
 }
 
 model BundleItem {
@@ -101,8 +105,8 @@ model Coupon {
   id          String    @id @default(cuid())
   code        String    @unique
   type        String    // FIXED | PERCENT | FREE_SHIP
-  value       Int
-  minSubtotal Int       @default(0)
+  value       Float
+  minSubtotal Float     @default(0)
   maxUses     Int?
   usedCount   Int       @default(0)
   expiresAt   DateTime?
@@ -116,9 +120,10 @@ model StoreSetting {
   upcShipBaht       Int      @default(120)
   freeShipThreshold Int      @default(990)
   codFeeBaht        Int      @default(20)
+  wholesaleMinPacks Int      @default(10)
   phone             String   @default("081-234-5678")
-  lineId            String   @default("@831uzirg")
-  lineOaUrl         String   @default("https://line.me/R/ti/p/@831uzirg")
+  lineId            String   @default("@steakboss")
+  lineOaUrl         String   @default("https://line.me/R/ti/p/@steakboss")
   promptpayId       String   @default("0812345678")
   promptpayName     String   @default("บจก. สเต็กบอสส์ต้นตำรับ")
   facebookPage      String   @default("steakbossoriginal")
@@ -132,6 +137,7 @@ model Order {
   userId         String?
   channel        String       @default("WEB") // WEB | LINE
   status         String       @default("PENDING_PAYMENT")
+  pricingTier    String       @default("RETAIL") // RETAIL | WHOLESALE | BULK
   customerName   String
   customerPhone  String
   customerEmail  String       @default("")
@@ -140,11 +146,11 @@ model Order {
   postalCode     String       @default("")
   addressText    String       @default("")
   note           String       @default("")
-  subtotalBaht   Int
-  discountBaht   Int          @default(0)
-  shippingBaht   Int          @default(0)
-  codFeeBaht     Int          @default(0)
-  totalBaht      Int
+  subtotalBaht   Float
+  discountBaht   Float        @default(0)
+  shippingBaht   Float        @default(0)
+  codFeeBaht     Float        @default(0)
+  totalBaht      Float
   couponCode     String?
   paymentMethod  String       @default("PROMPTPAY") // PROMPTPAY | COD
   carrier        String       @default("")
@@ -167,10 +173,11 @@ model OrderItem {
   orderId       String
   productId     String
   productName   String
-  unitPriceBaht Int
-  unitCostBaht  Int     @default(0)
+  appliedTier   String  @default("RETAIL") // RETAIL | WHOLESALE | BULK
+  unitPriceBaht Float
+  unitCostBaht  Float   @default(0)
   quantity      Int
-  lineTotalBaht Int
+  lineTotalBaht Float
   order         Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product       Product @relation(fields: [productId], references: [id])
 }
@@ -190,7 +197,7 @@ model Payment {
   orderId      String
   method       String
   status       String    @default("PENDING") // PENDING | VERIFIED | REJECTED
-  amountBaht   Int
+  amountBaht   Float
   slipUrl      String?
   slipTransRef String?   @unique
   slipHash     String?   @unique

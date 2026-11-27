@@ -8,8 +8,12 @@ import { formatBaht } from "@/lib/format";
 
 export function ProductCard({ product }: { product: EnrichedProduct }) {
   const [showPack, setShowPack] = useState(false);
-  const { addItem } = useCart();
+  const { addItem, qualifiesWholesale } = useCart();
   const soldOut = product.availableStock <= 0;
+  const activePrice =
+    qualifiesWholesale && product.wholesalePriceBaht > 0
+      ? product.wholesalePriceBaht
+      : product.priceBaht;
 
   return (
     <article className="bg-sb-panel border border-sb-line rounded-2xl overflow-hidden flex flex-col transition hover:-translate-y-1 hover:border-[#5a4a42]">
@@ -74,13 +78,32 @@ export function ProductCard({ product }: { product: EnrichedProduct }) {
             {product.name}
           </Link>
         </h3>
-        <p className="text-sm text-sb-mute">{product.subtitle}</p>
+        <p className="text-xs text-sb-mute line-clamp-2">{product.subtitle}</p>
+        <div className="flex flex-wrap gap-1.5 pt-1.5">
+          {product.wholesalePriceBaht > 0 && (
+            <span className="px-2 py-0.5 rounded-md bg-sb-panel2 border border-sb-line text-[11px] font-semibold text-sb-pink2">
+              ส่ง {formatBaht(product.wholesalePriceBaht)}
+            </span>
+          )}
+          {product.bulkPriceBaht !== null && product.bulkMinQty > 0 && (
+            <span className="px-2 py-0.5 rounded-md bg-sb-ok/15 border border-sb-ok/30 text-[11px] font-semibold text-sb-ok">
+              {product.bulkMinQty}+ แพ็ค {formatBaht(product.bulkPriceBaht)}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="px-4 pb-4 flex items-center justify-between gap-2">
-        <span className="font-display font-extrabold text-2xl">
-          {formatBaht(product.priceBaht)}
-        </span>
+        <div>
+          <span className="font-display font-extrabold text-2xl">
+            {formatBaht(activePrice)}
+          </span>
+          {activePrice < product.priceBaht && (
+            <span className="text-xs text-sb-mute line-through ml-1.5">
+              {formatBaht(product.priceBaht)}
+            </span>
+          )}
+        </div>
         <button
           type="button"
           disabled={soldOut}
@@ -90,6 +113,10 @@ export function ProductCard({ product }: { product: EnrichedProduct }) {
               slug: product.slug,
               name: product.name,
               priceBaht: product.priceBaht,
+              wholesalePriceBaht: product.wholesalePriceBaht,
+              bulkPriceBaht: product.bulkPriceBaht,
+              bulkMinQty: product.bulkMinQty,
+              packSize: product.packSize,
               weightGrams: product.weightGrams,
               imgUrl: product.platedImgUrl,
             })

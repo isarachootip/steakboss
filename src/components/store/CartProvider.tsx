@@ -9,33 +9,70 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  evaluateCartPricing,
+  type PricingTier,
+  type ResolvedCartPriceLine,
+} from "@/domain/pricing";
 
 export interface CartItem {
   productId: string;
   slug: string;
   name: string;
   priceBaht: number;
+  wholesalePriceBaht: number;
+  bulkPriceBaht: number | null;
+  bulkMinQty: number;
+  packSize: number;
   weightGrams: number;
   imgUrl: string;
   quantity: number;
 }
 
+export interface AddCartItemInput {
+  productId: string;
+  slug: string;
+  name: string;
+  priceBaht: number;
+  wholesalePriceBaht?: number;
+  bulkPriceBaht?: number | null;
+  bulkMinQty?: number;
+  packSize?: number;
+  weightGrams: number;
+  imgUrl: string;
+}
+
 interface CartContextValue {
   items: CartItem[];
   count: number;
+  pricingTier: PricingTier;
+  qualifiesWholesale: boolean;
+  packsToWholesale: number;
+  wholesaleMinPacks: number;
+  retailSubtotalBaht: number;
+  tierSavingsBaht: number;
   subtotalBaht: number;
+  resolvedLines: Record<string, ResolvedCartPriceLine>;
   drawerOpen: boolean;
   setDrawerOpen: (open: boolean) => void;
-  addItem: (item: Omit<CartItem, "quantity">, qty?: number) => void;
+  addItem: (item: AddCartItemInput, qty?: number) => void;
   setQty: (productId: string, qty: number) => void;
   clearCart: () => void;
   toast: string | null;
 }
 
-const STORAGE_KEY = "sb-cart-v2";
+const STORAGE_KEY = "sb-cart-v3";
 const CartContext = createContext<CartContextValue | null>(null);
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({
+  children,
+  wholesaleMinPacks = 10,
+  isWholesaleRole = false,
+}: {
+  children: ReactNode;
+  wholesaleMinPacks?: number;
+  isWholesaleRole?: boolean;
+}) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -44,7 +81,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setItems(JSON.parse(raw) as CartItem[]);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Partial<CartItem>[];
+        setItems(
+          parsed
+            .filter((x): x is CartItem => Boolean(x.productId && x.name))
+            .map((x) => ({
+              ...x,
+              wholesalePriceBaht: x.wholesalePriceBaht ?? x.priceBaht,
+              bulkPriceBaht: x.bulkPriceBaht ?? null,
+              bulkMinQty: x.bulkMinQty ?? 0,
+              packSize: x.packSize ?? 1,
+            }))
+        );
+      }
     } catch {
       // ignore corrupted storage
     }
@@ -66,15 +116,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addItem = useCallback(
-    (item: Omit<CartItem, "quantity">, qty = 1) => {
+    (item: AddCartItemInput, qty = 1) => {
+      const normalized: Omit<CartItem, "quantity"> = {
+        ...item,
+        wholesalePriceBaht: item.wholesalePriceBaht ?? item.priceBaht,
+        bulkPriceBaht: item.bulkPriceBaht ?? null,
+        bulkMinQty: item.bulkMinQty ?? 0,
+        packSize: item.packSize ?? 1,
+      };
       setItems((prev) => {
-        const idx = prev.findIndex((x) => x.productId === item.productId);
+        const idx = prev.findIndex((x) => x.productId === normalized.productId);
         if (idx >= 0) {
           const next = [...prev];
-          next[idx] = { ...next[idx]!, quantity: next[idx]!.quantity + qty };
+          next[idx] = { ...normalized, quantity: next[idx]!.quantity + qty };
           return next;
         }
-        return [...prev, { ...item, quantity: qty }];
+        return [...prev, { ...normalized, quantity: qty }];
       });
       showToast(`เพิ่ม ${item.name} ลงตะกร้าแล้ว`);
     },
@@ -91,20 +148,34 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
-  const value = useMemo<CartContextValue>(
-    () => ({
+  const value = useMemo<CartContextValue>(() => {
+    const evalRes = evaluateCartPricing(items, {
+      isWholesaleRole,
+      wholesaleMinPacks,
+    });
+    const resolvedLines: Record<string, ResolvedCartPriceLine> = {};
+    for (const line of evalRes.lines) {
+      resolvedLines[line.productId] = line;
+    }
+    return {
       items,
-      count: items.reduce((s, x) => s + x.quantity, 0),
-      subtotalBaht: items.reduce((s, x) => s + x.priceBaht * x.quantity, 0),
+      count: evalRes.totalPacks,
+      pricingTier: evalRes.pricingTier,
+      qualifiesWholesale: evalRes.qualifiesWholesale,
+      packsToWholesale: evalRes.packsToWholesale,
+      wholesaleMinPacks,
+      retailSubtotalBaht: evalRes.retailSubtotalBaht,
+      tierSavingsBaht: evalRes.tierSavingsBaht,
+      subtotalBaht: evalRes.subtotalBaht,
+      resolvedLines,
       drawerOpen,
       setDrawerOpen,
       addItem,
       setQty,
       clearCart,
       toast,
-    }),
-    [items, drawerOpen, addItem, setQty, clearCart, toast]
-  );
+    };
+  }, [items, isWholesaleRole, wholesaleMinPacks, drawerOpen, addItem, setQty, clearCart, toast]);
 
   return (
     <CartContext.Provider value={value}>

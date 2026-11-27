@@ -31,6 +31,10 @@ export interface EnrichedProduct {
   categoryName: string;
   weightGrams: number;
   priceBaht: number;
+  wholesalePriceBaht: number;
+  bulkPriceBaht: number | null;
+  bulkMinQty: number;
+  packSize: number;
   costBaht?: number;
   stockQty: number;
   availableStock: number;
@@ -97,6 +101,10 @@ export function enrichProduct(
     categoryName: p.category.name,
     weightGrams: p.weightGrams,
     priceBaht: p.priceBaht,
+    wholesalePriceBaht: p.wholesalePriceBaht,
+    bulkPriceBaht: p.bulkPriceBaht,
+    bulkMinQty: p.bulkMinQty,
+    packSize: p.packSize,
     ...(includeCost ? { costBaht: p.costBaht } : {}),
     stockQty: p.stockQty,
     availableStock,

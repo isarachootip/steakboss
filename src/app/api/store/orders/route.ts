@@ -35,9 +35,12 @@ export async function POST(req: Request) {
     }
 
     const session = await getSession();
+    const isBuyerSession =
+      session?.role === "CUSTOMER" || session?.role === "WHOLESALE";
     const order = await createOrder(
       parsed.data,
-      session?.role === "CUSTOMER" ? session.userId : undefined
+      isBuyerSession ? session.userId : undefined,
+      isBuyerSession ? session.role : undefined
     );
     return NextResponse.json({ order }, { status: 201 });
   } catch (err) {

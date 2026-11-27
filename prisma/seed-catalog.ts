@@ -1,125 +1,89 @@
+import fs from "node:fs";
+import path from "node:path";
+import { parseSteakbossPriceSheetCsv } from "../src/domain/price-sheet-parser";
+
+const csvPath = path.join(process.cwd(), "prisma/data/price-sheet-2569-11-21.csv");
+const csvText = fs.readFileSync(csvPath, "utf8");
+const parsed = parseSteakbossPriceSheetCsv(csvText);
+
 export const SEED_CATEGORIES = [
-  { slug: "pork", name: "หมู", sortOrder: 1 },
-  { slug: "chicken", name: "ไก่", sortOrder: 2 },
-  { slug: "clean", name: "ไก่คลีน", sortOrder: 3 },
-  { slug: "premium", name: "พรีเมียม", sortOrder: 4 },
-  { slug: "set", name: "เซ็ตคุ้ม", sortOrder: 5 },
+  ...parsed.categories,
+  { slug: "set", name: "เซ็ตคุ้ม", sortOrder: 6 },
 ];
 
-export const SEED_PRODUCTS = [
-  {
-    slug: "pork-chop-kp",
-    sku: "SB-KP-185",
-    name: "สเต็กหมูพอร์คชอป KP",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "pork",
-    weightGrams: 185,
-    priceBaht: 89,
-    costBaht: 52,
-    stockQty: 80,
-    tag: "ขายดี",
-    isNew: false,
+export interface SeedProductEntry {
+  slug: string;
+  sku: string;
+  name: string;
+  subtitle: string;
+  description: string;
+  catSlug: string;
+  weightGrams: number;
+  priceBaht: number;
+  wholesalePriceBaht: number;
+  bulkPriceBaht: number | null;
+  bulkMinQty: number;
+  packSize: number;
+  costBaht: number;
+  stockQty: number;
+  tag: string;
+  isNew: boolean;
+  isBundle: boolean;
+  isActive: boolean;
+  platedImgUrl: string;
+  packImgUrl: string;
+  wideImgUrl?: string | null;
+  sortOrder: number;
+}
+
+export const SEED_PRODUCTS: SeedProductEntry[] = [
+  ...parsed.products.map((p) => ({
+    slug: p.slug,
+    sku: p.sku,
+    name: p.name,
+    subtitle: p.subtitle,
+    description: p.description,
+    catSlug: p.categorySlug,
+    weightGrams: p.weightGrams,
+    priceBaht: p.priceBaht,
+    wholesalePriceBaht: p.wholesalePriceBaht,
+    bulkPriceBaht: p.bulkPriceBaht,
+    bulkMinQty: p.bulkMinQty,
+    packSize: p.packSize,
+    costBaht: Math.round(p.wholesalePriceBaht * 0.75 * 100) / 100,
+    stockQty: p.isActive ? 80 : 0,
+    tag: p.tag,
+    isNew: p.isNew,
     isBundle: false,
-    platedImgUrl: "/images/products/kp-plated.jpg",
-    packImgUrl: "/images/products/kp-pack.jpg",
-    description:
-      "หมูพอร์คชอปติดกระดูกชิ้นหนา หมักพริกไทยดำจนเข้าเนื้อ ย่างแล้วขอบมันหอม เนื้อฉ่ำ เข้ากับซอสพริกไทยดำ เฟรนช์ฟรายส์ และขนมปังกระเทียม",
-    sortOrder: 1,
-  },
-  {
-    slug: "tender-pork-big",
-    sku: "SB-PORK-140",
-    name: "หมูนุ่ม BIG",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "pork",
-    weightGrams: 140,
-    priceBaht: 69,
-    costBaht: 39,
-    stockQty: 90,
-    tag: "",
-    isNew: false,
-    isBundle: false,
-    platedImgUrl: "/images/products/pork-plated.jpg",
-    packImgUrl: "/images/products/pork-pack.jpg",
-    description:
-      "หมูชิ้นใหญ่ เนื้อนุ่มพิเศษ หมักพริกไทยดำรสกลมกล่อม ย่างง่าย สุกไว เหมาะกับมื้อเย็นรีบ ๆ หรือทำข้าวกล่อง",
-    sortOrder: 2,
-  },
-  {
-    slug: "chicken-steak-big",
-    sku: "SB-CHK-180",
-    name: "สเต็กไก่นุ่ม BIG",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "chicken",
-    weightGrams: 180,
-    priceBaht: 69,
-    costBaht: 38,
-    stockQty: 100,
-    tag: "",
-    isNew: false,
-    isBundle: false,
-    platedImgUrl: "/images/products/chk-plated.jpg",
-    packImgUrl: "/images/products/chk-pack.jpg",
-    description:
-      "สเต็กไก่ชิ้นโต เนื้อไก่ 85% เครื่องหมัก 15% นุ่มชุ่มฉ่ำ ย่างแล้วหนังเป็นลายสวย เสิร์ฟพร้อมซอสพริกไทยดำ",
-    sortOrder: 3,
-  },
-  {
-    slug: "easy-clean-chicken-p",
-    sku: "SB-CLEAN-170",
-    name: "อีซี่ ไก่คลีน P",
-    subtitle: "หมักพริกไทยดำ",
-    catSlug: "clean",
-    weightGrams: 170,
-    priceBaht: 59,
-    costBaht: 34,
-    stockQty: 85,
-    tag: "สายคลีน",
-    isNew: false,
-    isBundle: false,
-    platedImgUrl: "/images/products/clean-plated.jpg",
-    packImgUrl: "/images/products/clean-pack.jpg",
-    description:
-      "อกไก่หมักพริกไทยดำรสเบา สำหรับคนคุมอาหาร ย่างคู่สลัดผัก มะเขือเทศ และบรอกโคลี ได้มื้อโปรตีนที่ไม่จืด",
-    sortOrder: 4,
-  },
-  {
-    slug: "chicken-steak-premium",
-    sku: "SB-PREM-360",
-    name: "Chicken Steak พรีเมียม",
-    subtitle: "หมักสมุนไพรพริกไทย",
-    catSlug: "premium",
-    weightGrams: 360,
-    priceBaht: 159,
-    costBaht: 92,
-    stockQty: 50,
-    tag: "",
-    isNew: true,
-    isBundle: false,
-    platedImgUrl: "/images/products/prem-plated.jpg",
-    packImgUrl: "/images/products/prem-pack.jpg",
-    wideImgUrl: "/images/products/prem-wide.jpg",
-    description:
-      "ไลน์ใหม่แพ็คดำทอง สเต็กไก่ชิ้นใหญ่ 360 กรัม หมักสมุนไพรและพริกไทย ย่างแล้วหอมกลิ่นเฮิร์บ เนื้อฉ่ำ หั่นแบ่งทานได้ 2 ที่",
-    sortOrder: 5,
-  },
+    isActive: p.isActive,
+    platedImgUrl: p.platedImgUrl,
+    packImgUrl: p.packImgUrl,
+    wideImgUrl: p.wideImgUrl,
+    sortOrder: p.sortOrder,
+  })),
   {
     slug: "best-seller-set-4",
     sku: "SB-SET-4",
     name: "เซ็ตรวมฮิต 4 ซอง",
-    subtitle: "KP + หมูนุ่ม + ไก่นุ่ม + ไก่คลีน",
+    subtitle: "พอร์คชอป KP + หมูนุ่ม BIG + ไก่นุ่ม BIG + ไก่คลีน P",
     catSlug: "set",
-    weightGrams: 675,
-    priceBaht: 259,
-    costBaht: 163,
+    weightGrams: 670,
+    priceBaht: 179,
+    wholesalePriceBaht: 145,
+    bulkPriceBaht: 139,
+    bulkMinQty: 5,
+    packSize: 4,
+    costBaht: 115,
     stockQty: 0,
-    tag: "",
+    tag: "เซ็ตสุดคุ้ม",
     isNew: true,
     isBundle: true,
+    isActive: true,
     platedImgUrl: "/images/products/set-plated.jpg",
     packImgUrl: "/images/products/set-pack.jpg",
+    wideImgUrl: null,
     description:
-      "ได้ครบ 4 รสชาติขายดีในกล่องเดียว ลองให้ทั่วก่อนเลือกตัวโปรด หรือสต็อกไว้ในช่องฟรีซให้มีสเต็กพร้อมย่างทั้งสัปดาห์",
-    sortOrder: 6,
+      "รวม 4 เมนูขายดีในเซ็ตเดียว ทั้งหมูและไก่พร้อมย่าง ประหยัดกว่าซื้อแยกซอง เหมาะสำหรับติดตู้ฟรีซไว้ทานทั้งสัปดาห์",
+    sortOrder: 90,
   },
 ];

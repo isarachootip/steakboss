@@ -1,3 +1,5 @@
+import { roundBaht } from "./money";
+
 export type DeliveryMethod = "COLD_CHAIN" | "FACTORY_PICKUP";
 export type ShippingZone = "BKK" | "UPC" | "PICKUP";
 export type PaymentMethod = "PROMPTPAY" | "COD";
@@ -44,9 +46,13 @@ export function resolveShippingZone(postalCode: string): "BKK" | "UPC" | null {
 export function calculateShippingQuote(
   input: ShippingQuoteInput
 ): ShippingQuoteResult {
-  const discount = Math.max(0, Math.min(input.subtotalBaht, input.discountBaht ?? 0));
-  const netSubtotal = Math.max(0, input.subtotalBaht - discount);
-  const amountToFreeShipping = Math.max(0, input.rates.freeShipThreshold - netSubtotal);
+  const discount = roundBaht(
+    Math.max(0, Math.min(input.subtotalBaht, input.discountBaht ?? 0))
+  );
+  const netSubtotal = roundBaht(Math.max(0, input.subtotalBaht - discount));
+  const amountToFreeShipping = roundBaht(
+    Math.max(0, input.rates.freeShipThreshold - netSubtotal)
+  );
   const codFeeBaht = input.paymentMethod === "COD" ? input.rates.codFeeBaht : 0;
 
   if (input.deliveryMethod === "FACTORY_PICKUP") {
@@ -54,7 +60,7 @@ export function calculateShippingQuote(
       zone: "PICKUP",
       shippingBaht: 0,
       codFeeBaht,
-      totalBaht: netSubtotal + codFeeBaht,
+      totalBaht: roundBaht(netSubtotal + codFeeBaht),
       amountToFreeShipping: 0,
     };
   }
@@ -81,7 +87,7 @@ export function calculateShippingQuote(
     zone,
     shippingBaht,
     codFeeBaht,
-    totalBaht: netSubtotal + shippingBaht + codFeeBaht,
+    totalBaht: roundBaht(netSubtotal + shippingBaht + codFeeBaht),
     amountToFreeShipping: isFree ? 0 : amountToFreeShipping,
   };
 }

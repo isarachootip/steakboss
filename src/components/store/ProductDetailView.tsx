@@ -6,6 +6,7 @@ import { Minus, Plus, Snowflake, ShieldCheck } from "lucide-react";
 import type { EnrichedProduct } from "@/services/product.service";
 import { useCart } from "./CartProvider";
 import { formatBaht } from "@/lib/format";
+import { multiplyBaht } from "@/domain/money";
 import { ProductGallery } from "./ProductGallery";
 
 export function ProductDetailView({
@@ -21,8 +22,16 @@ export function ProductDetailView({
     ...(product.wideImgUrl ? [{ label: "ภาพเต็มจาน", src: product.wideImgUrl }] : []),
   ];
   const [qty, setQty] = useState(1);
-  const { addItem, setDrawerOpen } = useCart();
+  const { addItem, setDrawerOpen, qualifiesWholesale, wholesaleMinPacks } = useCart();
   const soldOut = product.availableStock <= 0;
+
+  let previewUnit = product.priceBaht;
+  if ((qualifiesWholesale || (wholesaleMinPacks > 0 && qty >= wholesaleMinPacks)) && product.wholesalePriceBaht > 0) {
+    previewUnit = product.wholesalePriceBaht;
+  }
+  if (product.bulkPriceBaht !== null && product.bulkMinQty > 0 && qty >= product.bulkMinQty) {
+    previewUnit = Math.min(previewUnit, product.bulkPriceBaht);
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-14">
@@ -44,24 +53,47 @@ export function ProductDetailView({
                 สินค้าใหม่
               </span>
             )}
+            {product.tag && (
+              <span className="px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-orange text-[#2b1000]">
+                {product.tag}
+              </span>
+            )}
             <span className="px-3 py-1 rounded-full text-xs font-semibold bg-sb-panel2 text-sb-ink">
               {product.categoryName} · SKU {product.sku}
             </span>
-            {product.bundleSavingsBaht > 0 && (
-              <span className="px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-orange text-[#2b1000]">
-                ประหยัด {formatBaht(product.bundleSavingsBaht)}
-              </span>
-            )}
           </div>
 
           <div>
             <h1 className="font-display font-extrabold text-3xl sm:text-4xl">{product.name}</h1>
             <p className="text-sb-mute mt-1">
-              {product.subtitle} · {product.weightGrams} กรัม · แช่แข็ง -18°C
+              {product.subtitle} · น้ำหนักรวม {product.weightGrams} กรัม · แช่แข็ง -18°C
             </p>
           </div>
 
           <p className="leading-relaxed text-sb-ink/90">{product.description}</p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-sm">
+            <div className="rounded-xl border border-sb-line bg-sb-panel p-3">
+              <p className="text-xs text-sb-mute">ราคาปลีกแช่แข็ง</p>
+              <p className="font-display font-extrabold text-xl mt-0.5">{formatBaht(product.priceBaht)}</p>
+            </div>
+            {product.wholesalePriceBaht > 0 && (
+              <div className="rounded-xl border border-sb-pink/40 bg-sb-panel2 p-3">
+                <p className="text-xs text-sb-pink2">ราคาส่ง ({wholesaleMinPacks}+ แพ็คคละได้)</p>
+                <p className="font-display font-extrabold text-xl text-sb-pink2 mt-0.5">
+                  {formatBaht(product.wholesalePriceBaht)}
+                </p>
+              </div>
+            )}
+            {product.bulkPriceBaht !== null && product.bulkMinQty > 0 && (
+              <div className="rounded-xl border border-sb-ok/40 bg-sb-ok/10 p-3">
+                <p className="text-xs text-sb-ok">โปรยกลัง ({product.bulkMinQty}+ แพ็ค)</p>
+                <p className="font-display font-extrabold text-xl text-sb-ok mt-0.5">
+                  {formatBaht(product.bulkPriceBaht)}
+                </p>
+              </div>
+            )}
+          </div>
 
           {product.isBundle && product.components.length > 0 && (
             <div className="sb-panel space-y-2">
@@ -83,10 +115,10 @@ export function ProductDetailView({
 
           <div className="flex items-baseline gap-3">
             <span className="font-display font-extrabold text-4xl">
-              {formatBaht(product.priceBaht)}
+              {formatBaht(previewUnit)}
             </span>
             <span className="text-sm text-sb-mute">
-              {soldOut ? "สินค้าหมดชั่วคราว" : `พร้อมส่ง ${product.availableStock} ชุด`}
+              {soldOut ? "สินค้าหมดชั่วคราว" : `พร้อมส่ง ${product.availableStock} แพ็ค`}
             </span>
           </div>
 
@@ -110,6 +142,10 @@ export function ProductDetailView({
                     slug: product.slug,
                     name: product.name,
                     priceBaht: product.priceBaht,
+                    wholesalePriceBaht: product.wholesalePriceBaht,
+                    bulkPriceBaht: product.bulkPriceBaht,
+                    bulkMinQty: product.bulkMinQty,
+                    packSize: product.packSize,
                     weightGrams: product.weightGrams,
                     imgUrl: product.platedImgUrl,
                   },
@@ -119,7 +155,7 @@ export function ProductDetailView({
               }}
               className="sb-btn flex-1 min-w-[200px]"
             >
-              {soldOut ? "สินค้าหมดชั่วคราว" : `ใส่ตะกร้า (${formatBaht(product.priceBaht * qty)})`}
+              {soldOut ? "สินค้าหมดชั่วคราว" : `ใส่ตะกร้า (${formatBaht(multiplyBaht(previewUnit, qty))})`}
             </button>
           </div>
 
@@ -133,15 +169,6 @@ export function ProductDetailView({
               <span>ผลิตตรงจากโรงงาน อ่างทอง</span>
             </div>
           </div>
-
-          <div className="sb-panel space-y-2">
-            <h2 className="font-display font-bold text-lg">วิธีละลายและย่างให้อร่อย</h2>
-            <ol className="list-decimal list-inside text-sm text-sb-mute space-y-1">
-              <li>ละลายในช่องเย็นข้ามคืน หรือแช่ทั้งซองในน้ำเย็น 30–40 นาที</li>
-              <li>ย่างกระทะไฟกลางค่อนแรงข้างละ 4–6 นาที หรือหม้อทอดไร้น้ำมัน 180°C 12–15 นาที</li>
-              <li>สุกทั่วชิ้น (ไก่ 74°C / หมู 70°C) พักเนื้อ 3 นาทีก่อนหั่นเสิร์ฟ</li>
-            </ol>
-          </div>
         </div>
       </div>
 
@@ -154,7 +181,7 @@ export function ProductDetailView({
                 <img src={p.platedImgUrl} alt={p.name} className="w-16 h-16 rounded-xl object-cover" />
                 <div className="min-w-0">
                   <p className="font-display font-bold text-sm truncate">{p.name}</p>
-                  <p className="text-xs text-sb-mute">{p.weightGrams} กรัม</p>
+                  <p className="text-xs text-sb-mute">{p.weightGrams}g · ส่ง {formatBaht(p.wholesalePriceBaht)}</p>
                   <p className="font-display font-bold text-sb-pink2">{formatBaht(p.priceBaht)}</p>
                 </div>
               </Link>

@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { roundBaht } from "@/domain/money";
 import { calculateGrossMargin } from "@/domain/pricing";
 import { ORDER_STATUS_LABELS, isOrderStatus } from "@/domain/order";
 
@@ -80,13 +81,22 @@ export async function buildExecutiveReport(
     }
   }
 
+  grossRevenueBaht = roundBaht(grossRevenueBaht);
+  totalCostBaht = roundBaht(totalCostBaht);
+  webRevenueBaht = roundBaht(webRevenueBaht);
+  lineRevenueBaht = roundBaht(lineRevenueBaht);
+  promptpayVerifiedBaht = roundBaht(promptpayVerifiedBaht);
+  promptpayPendingBaht = roundBaht(promptpayPendingBaht);
+  codPendingSettlementBaht = roundBaht(codPendingSettlementBaht);
+  codSettledBaht = roundBaht(codSettledBaht);
+
   const uniqueCustomers = phoneCounts.size;
   const repeatCustomers = Array.from(phoneCounts.values()).filter((c) => c >= 2).length;
   const repeatRatePercent =
     uniqueCustomers > 0 ? Math.round((repeatCustomers / uniqueCustomers) * 1000) / 10 : 0;
 
   const aovBaht =
-    liveOrders.length > 0 ? Math.round(grossRevenueBaht / liveOrders.length) : 0;
+    liveOrders.length > 0 ? roundBaht(grossRevenueBaht / liveOrders.length) : 0;
   const margin = calculateGrossMargin(grossRevenueBaht, totalCostBaht);
 
   return {

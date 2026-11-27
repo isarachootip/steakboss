@@ -11,7 +11,8 @@ export { lookupOrderForTracking, updateOrderByAdmin } from "./order-admin.servic
 
 export async function createOrder(
   input: z.infer<typeof checkoutRequestSchema>,
-  userId?: string
+  userId?: string,
+  userRole?: string
 ) {
   const phone = normalizePhone(input.customerPhone);
   if (phone.length < 9) throw new Error("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง");
@@ -19,7 +20,18 @@ export async function createOrder(
     throw new Error("กรุณากรอกที่อยู่สำหรับจัดส่งรถเย็น");
   }
 
-  const quoted = await quoteCart(input);
+  let effectiveRole = userRole;
+  if (!effectiveRole && userId) {
+    const u = await db.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    effectiveRole = u?.role;
+  }
+
+  const quoted = await quoteCart(input, {
+    isWholesaleRole: effectiveRole === "WHOLESALE",
+  });
   if (quoted.shippingBaht === null || quoted.totalBaht === null || !quoted.zone) {
     throw new Error("กรุณากรอกรหัสไปรษณีย์ 5 หลักให้ถูกต้อง");
   }
@@ -89,6 +101,7 @@ export async function createOrder(
         userId: userId ?? null,
         channel: input.channel,
         status: initialStatus,
+        pricingTier: quoted.pricingTier,
         customerName: input.customerName,
         customerPhone: phone,
         customerEmail: input.customerEmail || "",
@@ -109,7 +122,8 @@ export async function createOrder(
           create: quoted.resolvedLines.map((l) => ({
             productId: l.product.id,
             productName: l.product.name,
-            unitPriceBaht: l.product.priceBaht,
+            appliedTier: l.appliedTier,
+            unitPriceBaht: l.unitPriceBaht,
             unitCostBaht: l.product.costBaht,
             quantity: l.quantity,
             lineTotalBaht: l.lineTotal,

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { getSession } from "@/lib/auth/session";
 import { getStoreSettings } from "@/services/settings.service";
 import { CartProvider } from "@/components/store/CartProvider";
 import { StoreHeader } from "@/components/store/StoreHeader";
@@ -13,10 +14,16 @@ export default async function StoreLayout({
 }: {
   children: ReactNode;
 }) {
-  const settings = await getStoreSettings();
+  const [settings, session] = await Promise.all([
+    getStoreSettings(),
+    getSession(),
+  ]);
 
   return (
-    <CartProvider>
+    <CartProvider
+      wholesaleMinPacks={settings.wholesaleMinPacks}
+      isWholesaleRole={session?.role === "WHOLESALE"}
+    >
       <StoreHeader />
       <main className="min-h-[75vh]">{children}</main>
       <StoreFooter

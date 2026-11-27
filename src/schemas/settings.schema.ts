@@ -5,6 +5,7 @@ export const updateSettingsSchema = z.object({
   upcShipBaht: z.number().int().min(0).max(5000),
   freeShipThreshold: z.number().int().min(0).max(100000),
   codFeeBaht: z.number().int().min(0).max(1000),
+  wholesaleMinPacks: z.number().int().min(0).max(1000).default(10),
   phone: z.string().trim().max(40),
   lineId: z.string().trim().max(60),
   lineOaUrl: z.string().trim().max(240),

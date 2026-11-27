@@ -4,6 +4,8 @@ import { getStoreSettings } from "./settings.service";
 import { listPublishedGuides } from "./content.service";
 import { lookupOrderForTracking } from "./order.service";
 import { resolveShippingZone, ZONE_LABELS } from "@/domain/shipping";
+import { buildCatalogChatReply } from "@/domain/chatbot-catalog-reply";
+import { formatBaht } from "@/lib/format";
 import {
   formatGuideChatReply,
   matchGuideForChatQuery,
@@ -20,29 +22,25 @@ async function buildRuleReply(text: string): Promise<string> {
 
   if (orderMatch) {
     const orderNo = orderMatch[0];
-    if (!phone4) {
-      return `ขอเบอร์โทร 4 ตัวท้ายที่ใช้สั่ง ${orderNo} ด้วยครับ เช่น "${orderNo} 1234"`;
-    }
+    if (!phone4) return `ขอเบอร์โทร 4 ตัวท้ายที่ใช้สั่ง ${orderNo} ด้วยครับ เช่น "${orderNo} 1234"`;
     const looked = await lookupOrderForTracking(orderNo, phone4);
     if (!looked.ok) return looked.error;
     const o = looked.order;
-    const trackLine = o.trackingNo
-      ? `\nขนส่ง: ${o.carrier || "รถเย็น"} เลขพัสดุ ${o.trackingNo}`
-      : "";
-    return `ออเดอร์ ${o.orderNo}\nสถานะ: ${o.statusLabel}${trackLine}\nยอดรวม ฿${o.totalBaht.toLocaleString("th-TH")}`;
+    const trackLine = o.trackingNo ? `\nขนส่ง: ${o.carrier || "รถเย็น"} เลขพัสดุ ${o.trackingNo}` : "";
+    return `ออเดอร์ ${o.orderNo}\nสถานะ: ${o.statusLabel}${trackLine}\nยอดรวม ${formatBaht(o.totalBaht)}`;
   }
 
   const settings = await getStoreSettings();
   const postcode = text.match(/\b\d{5}\b/)?.[0];
-  if (/ส่ง|ค่าขนส่ง|shipping|ไปรษณีย์/.test(s) && !/ติดตาม|สถานะ|พัสดุ/.test(s)) {
+  if (/ส่ง|ค่าขนส่ง|shipping|ไปรษณีย์/.test(s) && !/ติดตาม|สถานะ|พัสดุ|ราคาส่ง|ขายส่ง/.test(s)) {
     if (postcode) {
       const z = resolveShippingZone(postcode);
       if (z) {
         const fee = z === "BKK" ? settings.bkkShipBaht : settings.upcShipBaht;
-        return `รหัส ${postcode} อยู่โซน${ZONE_LABELS[z]} ค่าส่งรถเย็น ฿${fee} (ส่งฟรีเมื่อซื้อครบ ฿${settings.freeShipThreshold.toLocaleString("th-TH")})`;
+        return `รหัส ${postcode} อยู่โซน${ZONE_LABELS[z]} ค่าส่งรถเย็น ฿${fee} (ส่งฟรีเมื่อซื้อครบ ${formatBaht(settings.freeShipThreshold)})`;
       }
     }
-    return `ค่าส่งรถเย็น: กทม.และปริมณฑล ฿${settings.bkkShipBaht} · ต่างจังหวัด ฿${settings.upcShipBaht}\nซื้อครบ ฿${settings.freeShipThreshold.toLocaleString("th-TH")} ส่งฟรี · รับเองที่โรงงานอ่างทองฟรีครับ`;
+    return `ค่าส่งรถเย็น: กทม.และปริมณฑล ฿${settings.bkkShipBaht} · ต่างจังหวัด ฿${settings.upcShipBaht}\nซื้อครบ ${formatBaht(settings.freeShipThreshold)} ส่งฟรี · รับเองที่โรงงานอ่างทองฟรีครับ`;
   }
 
   if (/ติดตาม|สถานะ|พัสดุ|ถึงไหน|track/.test(s)) {
@@ -50,9 +48,8 @@ async function buildRuleReply(text: string): Promise<string> {
   }
   const guides = await listPublishedGuides();
   const matchedGuide = matchGuideForChatQuery(text, guides);
-  if (matchedGuide) {
-    return formatGuideChatReply(matchedGuide, process.env.NEXT_PUBLIC_APP_URL);
-  }
+  if (matchedGuide) return formatGuideChatReply(matchedGuide, process.env.NEXT_PUBLIC_APP_URL);
+
   if (/ปรุง|ย่าง|ทอด|ทำยังไง|ละลาย|หม้อทอด|ไมโครเวฟ|เวฟ/.test(s)) {
     return "ละลายในช่องเย็นข้ามคืน (หรือแช่ทั้งซองในน้ำเย็น 30–40 นาที)\nกระทะไฟกลางค่อนแรง ข้างละ 4–6 นาที หรือหม้อทอดไร้น้ำมัน 180°C 12–15 นาที\nสุกทั่ว ไก่ 74°C หมู 70°C พัก 3 นาทีแล้วเสิร์ฟครับ";
   }
@@ -64,31 +61,17 @@ async function buildRuleReply(text: string): Promise<string> {
   }
 
   const products = await listCatalogProducts();
-  if (/คลีน|ลดน้ำหนัก|โปรตีน|ไดเอท|diet/.test(s)) {
-    const clean = products.find((p) => p.categorySlug === "clean") ?? products[0];
-    if (clean) {
-      return `แนะนำ ${clean.name} ${clean.weightGrams}g ฿${clean.priceBaht} ${clean.subtitle} ย่างคู่สลัดได้เลยครับ`;
-    }
-  }
-  if (/แนะนำ|เมนู|ขายดี|มีอะไร|ราคา/.test(s)) {
-    const lines = products.map(
-      (p) =>
-        `• ${p.name} ${p.weightGrams}g ฿${p.priceBaht}${p.isNew ? " (ใหม่)" : ""}${p.availableStock <= 0 ? " (หมด)" : ""}`
-    );
-    return `เมนูสเต็กหมักพร้อมย่าง Steakboss ครับ\n${lines.join("\n")}`;
-  }
+  const catalogReply = buildCatalogChatReply(s, products, settings.wholesaleMinPacks);
+  if (catalogReply) return catalogReply;
 
-  const guideHints = guides
-    .map((g) => `${g.equipmentLabel}: ${g.tempLabel} ${g.durationLabel} (/guides/${g.slug})`)
-    .join(" | ");
-  const sysPrompt = `คุณคือ "บอสบอท" ผู้ช่วยร้าน Steakboss (สเต็กหมักแช่แข็ง -18°C จ.อ่างทอง) ตอบภาษาไทยสุภาพ ลงท้ายครับ สั้นไม่เกิน 5 บรรทัด ห้ามแต่งราคาเอง
-สินค้า: ${products.map((p) => `${p.name} ${p.weightGrams}g ฿${p.priceBaht}`).join(", ")}
-ค่าส่งรถเย็น: กทม. ฿${settings.bkkShipBaht}, ตจว. ฿${settings.upcShipBaht}, ส่งฟรีเมื่อครบ ฿${settings.freeShipThreshold}, COD +฿${settings.codFeeBaht}
-วิธีปรุง: ${guideHints}`;
+  const topSamples = products.slice(0, 12).map((p) => `${p.name} ปลีก฿${p.priceBaht}/ส่ง฿${p.wholesalePriceBaht}`).join(", ");
+  const sysPrompt = `คุณคือ "บอสบอท" ผู้ช่วยร้าน Steakboss (สเต๊กหมักแช่แข็ง -18°C จ.อ่างทอง) ตอบภาษาไทยสุภาพ ลงท้ายครับ สั้นไม่เกิน 5 บรรทัด
+สั่งคละครบ ${settings.wholesaleMinPacks} แพ็คได้ราคาส่งอัตโนมัติ ตัวอย่างสินค้า: ${topSamples}
+ค่าส่งรถเย็น: กทม. ฿${settings.bkkShipBaht}, ตจว. ฿${settings.upcShipBaht}, ส่งฟรีเมื่อครบ ฿${settings.freeShipThreshold}`;
   const aiText = await generateBossBotAiReply(sysPrompt, text);
   if (aiText) return aiText;
 
-  return 'ผมช่วยเรื่องเมนู ค่าส่ง ติดตามพัสดุ และวิธีปรุงได้ครับ หรือพิมพ์ "คุยแอดมิน" เพื่อติดต่อทีมงานได้เลยครับ';
+  return 'ผมช่วยเรื่องเมนู ราคาปลีก-ส่ง ค่าขนส่ง ติดตามพัสดุ และวิธีปรุงได้ครับ หรือพิมพ์ "คุยแอดมิน" เพื่อติดต่อทีมงานได้เลยครับ';
 }
 
 export async function handleIncomingChatMessage(params: {
@@ -100,12 +83,7 @@ export async function handleIncomingChatMessage(params: {
 }) {
   const cleanContent = params.content.trim();
   const thread = await db.chatThread.upsert({
-    where: {
-      channel_externalId: {
-        channel: params.channel,
-        externalId: params.externalId,
-      },
-    },
+    where: { channel_externalId: { channel: params.channel, externalId: params.externalId } },
     update: {
       lastMessageAt: new Date(),
       ...(params.customerName ? { customerName: params.customerName } : {}),
@@ -114,79 +92,46 @@ export async function handleIncomingChatMessage(params: {
     create: {
       channel: params.channel,
       externalId: params.externalId,
-      customerName:
-        params.customerName ||
-        (params.channel === "LINE" ? "ลูกค้า LINE OA" : "ลูกค้าหน้าร้าน"),
+      customerName: params.customerName || (params.channel === "LINE" ? "ลูกค้า LINE OA" : "ลูกค้าหน้าร้าน"),
       userId: params.userId ?? null,
       mode: "BOT",
     },
   });
 
-  await db.chatMessage.create({
-    data: {
-      threadId: thread.id,
-      sender: "CUSTOMER",
-      content: cleanContent,
-    },
-  });
-
-  if (thread.mode === "HUMAN") {
-    return { threadId: thread.id, mode: "HUMAN" as const, reply: null };
-  }
+  await db.chatMessage.create({ data: { threadId: thread.id, sender: "CUSTOMER", content: cleanContent } });
+  if (thread.mode === "HUMAN") return { threadId: thread.id, mode: "HUMAN" as const, reply: null };
 
   if (HANDOFF_REGEX.test(cleanContent)) {
-    await db.chatThread.update({
-      where: { id: thread.id },
-      data: { mode: "HUMAN", lastMessageAt: new Date() },
-    });
-    const reply =
-      "รับทราบครับ ผมส่งเรื่องให้แอดมินคนจริงดูแลต่อให้ทันที รอสักครู่นะครับ";
-    await db.chatMessage.create({
-      data: { threadId: thread.id, sender: "BOT", content: reply },
-    });
+    await db.chatThread.update({ where: { id: thread.id }, data: { mode: "HUMAN", lastMessageAt: new Date() } });
+    const reply = "รับทราบครับ ผมส่งเรื่องให้แอดมินคนจริงดูแลต่อให้ทันที รอสักครู่นะครับ";
+    await db.chatMessage.create({ data: { threadId: thread.id, sender: "BOT", content: reply } });
     const staffGroup = process.env.LINE_STAFF_GROUP_ID?.trim();
     if (staffGroup) {
       await pushLineMessage(staffGroup, [
-        {
-          type: "text",
-          text: `[Inbox ${params.channel}] ${thread.customerName} ขอคุยกับแอดมิน: "${cleanContent}"`,
-        },
+        { type: "text", text: `[Inbox ${params.channel}] ${thread.customerName} ขอคุยกับแอดมิน: "${cleanContent}"` },
       ]);
     }
     return { threadId: thread.id, mode: "HUMAN" as const, reply };
   }
 
   const reply = await buildRuleReply(cleanContent);
-  await db.chatMessage.create({
-    data: { threadId: thread.id, sender: "BOT", content: reply },
-  });
+  await db.chatMessage.create({ data: { threadId: thread.id, sender: "BOT", content: reply } });
   return { threadId: thread.id, mode: "BOT" as const, reply };
 }
 
-export async function sendAdminChatReply(
-  threadId: string,
-  content: string,
-  adminId: string
-) {
+export async function sendAdminChatReply(threadId: string, content: string, adminId: string) {
   const thread = await db.chatThread.findUnique({ where: { id: threadId } });
   if (!thread) throw new Error("ไม่พบห้องแชทนี้");
 
   const msg = await db.chatMessage.create({
-    data: {
-      threadId: thread.id,
-      sender: "ADMIN",
-      content: content.trim(),
-    },
+    data: { threadId: thread.id, sender: "ADMIN", content: content.trim() },
   });
-
   await db.chatThread.update({
     where: { id: thread.id },
     data: { mode: "HUMAN", assignedAdminId: adminId, lastMessageAt: new Date() },
   });
-
   if (thread.channel === "LINE") {
     await pushLineMessage(thread.externalId, [{ type: "text", text: content.trim() }]);
   }
-
   return msg;
 }

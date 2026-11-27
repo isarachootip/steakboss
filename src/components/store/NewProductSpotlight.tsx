@@ -35,9 +35,15 @@ export function NewProductSpotlight({ product }: { product: EnrichedProduct }) {
           {product.subtitle} · {product.weightGrams} กรัม · แช่แข็ง -18°C
         </p>
         <p className="leading-relaxed text-sb-ink/90">{product.description}</p>
-        <div className="font-display font-extrabold text-4xl">
-          {formatBaht(product.priceBaht)}
-          <span className="text-base font-normal text-sb-mute ml-2">/ ซอง</span>
+        <div className="flex flex-wrap items-baseline gap-3">
+          <span className="font-display font-extrabold text-4xl">
+            {formatBaht(product.priceBaht)}
+          </span>
+          {product.wholesalePriceBaht > 0 && (
+            <span className="px-3 py-1 rounded-full text-sm font-bold bg-sb-panel2 border border-sb-line text-sb-pink2">
+              ราคาส่ง {formatBaht(product.wholesalePriceBaht)}
+            </span>
+          )}
         </div>
         <div className="flex flex-wrap gap-3 pt-1">
           <button
@@ -49,6 +55,10 @@ export function NewProductSpotlight({ product }: { product: EnrichedProduct }) {
                 slug: product.slug,
                 name: product.name,
                 priceBaht: product.priceBaht,
+                wholesalePriceBaht: product.wholesalePriceBaht,
+                bulkPriceBaht: product.bulkPriceBaht,
+                bulkMinQty: product.bulkMinQty,
+                packSize: product.packSize,
                 weightGrams: product.weightGrams,
                 imgUrl: product.platedImgUrl,
               })

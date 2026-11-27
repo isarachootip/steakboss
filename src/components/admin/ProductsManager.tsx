@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, PackagePlus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Upload } from "lucide-react";
 import type { EnrichedProduct } from "@/services/product.service";
-import { formatBaht } from "@/lib/format";
 import { StockAdjustModal } from "./StockAdjustModal";
+import { CsvPriceImportModal } from "./CsvPriceImportModal";
+import { ProductEditModal } from "./ProductEditModal";
+import { ProductsTable } from "./ProductsTable";
 
 interface CategoryItem {
   id: string;
@@ -25,22 +27,11 @@ export function ProductsManager({
 }) {
   const [products, setProducts] = useState(initialProducts);
   const [stockTarget, setStockTarget] = useState<EnrichedProduct | null>(null);
-  const [showCreate, setShowCreate] = useState(false);
+  const [editTarget, setEditTarget] = useState<EnrichedProduct | "CREATE" | null>(null);
+  const [showCsvModal, setShowCsvModal] = useState(false);
+  const [catFilter, setCatFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    slug: "",
-    sku: "",
-    name: "",
-    subtitle: "หมักพริกไทยดำ",
-    description: "",
-    categoryId: categories[0]?.id ?? "",
-    weightGrams: 180,
-    priceBaht: 79,
-    costBaht: 45,
-    stockQty: 50,
-    platedImgUrl: "/images/products/kp-plated.jpg",
-    packImgUrl: "/images/products/kp-pack.jpg",
-  });
 
   async function refresh() {
     const res = await fetch("/api/admin/products");
@@ -57,43 +48,40 @@ export function ProductsManager({
       body: JSON.stringify(patch),
     });
     if (res.ok) {
-      setMsg("บันทึกข้อมูลสินค้าแล้ว");
+      setMsg("บันทึกสถานะสินค้าแล้ว");
       await refresh();
     }
   }
 
-  async function submitCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const res = await fetch("/api/admin/products", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    return products.filter((p) => {
+      if (catFilter !== "all" && p.categorySlug !== catFilter) return false;
+      if (!q) return true;
+      return `${p.name} ${p.sku} ${p.subtitle}`.toLowerCase().includes(q);
     });
-    const data = (await res.json()) as { error?: string };
-    if (!res.ok) {
-      setMsg(data.error || "เพิ่มสินค้าไม่สำเร็จ");
-      return;
-    }
-    setShowCreate(false);
-    setMsg("เพิ่มสินค้าใหม่เรียบร้อย");
-    await refresh();
-  }
+  }, [products, catFilter, search]);
 
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display font-extrabold text-3xl">
-            จัดการสินค้าและสต็อก (product_backend)
+            จัดการสินค้าและใบราคา ({products.length} รายการ)
           </h1>
           <p className="text-sm text-sb-mute">
-            สต็อกสินค้าเซ็ต (Bundle) คำนวณจากสินค้าลูกอัตโนมัติแบบ Real-time
+            รองรับราคาปลีกแช่แข็ง · ราคาส่ง · โปรยกลัง และการนำเข้าใบราคา CSV
           </p>
         </div>
         {canEdit && (
-          <button type="button" onClick={() => setShowCreate((v) => !v)} className="sb-btn text-sm">
-            <Plus className="w-4 h-4" /> เพิ่มสินค้าใหม่
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={() => setShowCsvModal(true)} className="sb-btn-ghost text-sm">
+              <Upload className="w-4 h-4" /> นำเข้าใบราคา CSV
+            </button>
+            <button type="button" onClick={() => setEditTarget("CREATE")} className="sb-btn text-sm">
+              <Plus className="w-4 h-4" /> เพิ่มสินค้าใหม่
+            </button>
+          </div>
         )}
       </div>
 
@@ -103,87 +91,55 @@ export function ProductsManager({
         </div>
       )}
 
-      {showCreate && (
-        <form onSubmit={submitCreate} className="sb-panel grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <input required placeholder="ชื่อสินค้า" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="sb-input text-sm" />
-          <input required placeholder="slug (เช่น spicy-chicken)" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} className="sb-input text-sm" />
-          <input required placeholder="SKU (เช่น SB-SPC-180)" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} className="sb-input text-sm" />
-          <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: e.target.value })} className="sb-input text-sm">
-            {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-          <input type="number" placeholder="ราคาขาย (บาท)" value={form.priceBaht} onChange={(e) => setForm({ ...form, priceBaht: Number(e.target.value) })} className="sb-input text-sm" />
-          <input type="number" placeholder="สต็อกเริ่มต้น" value={form.stockQty} onChange={(e) => setForm({ ...form, stockQty: Number(e.target.value) })} className="sb-input text-sm" />
-          <input placeholder="คำอธิบายสั้น" value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className="sb-input text-sm sm:col-span-2" />
-          <button type="submit" className="sb-btn text-sm">บันทึกสินค้าใหม่</button>
-        </form>
-      )}
-
-      <div className="sb-panel overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-sb-line text-sb-mute font-display">
-              <th className="text-left py-2.5">สินค้า</th>
-              <th className="text-right py-2.5">ราคาขาย</th>
-              {includeCost && <th className="text-right py-2.5">ราคาทุน</th>}
-              <th className="text-right py-2.5">สต็อกพร้อมขาย</th>
-              <th className="text-center py-2.5">เปิดขาย</th>
-              <th className="text-right py-2.5">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-sb-line">
-            {products.map((p) => (
-              <tr key={p.id}>
-                <td className="py-3 pr-3">
-                  <div className="flex items-center gap-3">
-                    <img src={p.platedImgUrl} alt={p.name} className="w-11 h-11 rounded-lg object-cover" />
-                    <div>
-                      <p className="font-bold">{p.name}</p>
-                      <p className="text-xs text-sb-mute">
-                        {p.sku} · {p.categoryName} · {p.weightGrams}g {p.isBundle ? "· BUNDLE" : ""}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-                <td className="py-3 text-right font-bold">{formatBaht(p.priceBaht)}</td>
-                {includeCost && (
-                  <td className="py-3 text-right text-sb-mute">{formatBaht(p.costBaht ?? 0)}</td>
-                )}
-                <td className="py-3 text-right">
-                  <span className={`font-bold ${p.isLowStock ? "text-sb-orange" : "text-sb-ok"}`}>
-                    {p.availableStock}
-                  </span>
-                  {p.isBundle && <span className="block text-[11px] text-sb-mute">จากสินค้าลูก</span>}
-                </td>
-                <td className="py-3 text-center">
-                  <input
-                    type="checkbox"
-                    disabled={!canEdit}
-                    checked={p.isActive}
-                    onChange={(e) => quickPatch(p.id, { isActive: e.target.checked })}
-                    className="w-5 h-5 accent-sb-pink"
-                  />
-                </td>
-                <td className="py-3 text-right">
-                  {!p.isBundle && (
-                    <button type="button" onClick={() => setStockTarget(p)} className="sb-btn-dark text-xs">
-                      <PackagePlus className="w-3.5 h-3.5" /> ปรับสต็อก
-                    </button>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div className="flex flex-wrap gap-3">
+        <input
+          type="search"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="ค้นหาชื่อสินค้า หรือรหัส SKU..."
+          className="sb-input max-w-xs text-sm"
+        />
+        <select
+          value={catFilter}
+          onChange={(e) => setCatFilter(e.target.value)}
+          className="sb-input max-w-[240px] text-sm"
+        >
+          <option value="all">ทุกหมวดหมู่ ({products.length})</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.slug}>{c.name}</option>
+          ))}
+        </select>
       </div>
+
+      <ProductsTable
+        products={filtered}
+        includeCost={includeCost}
+        canEdit={canEdit}
+        onToggleActive={(id, isActive) => quickPatch(id, { isActive })}
+        onEdit={(p) => setEditTarget(p)}
+        onAdjustStock={(p) => setStockTarget(p)}
+      />
 
       {stockTarget && (
         <StockAdjustModal
           product={stockTarget}
           onClose={() => setStockTarget(null)}
-          onDone={async (m) => {
-            setMsg(m);
-            await refresh();
-          }}
+          onDone={async (m) => { setMsg(m); await refresh(); }}
+        />
+      )}
+      {editTarget && (
+        <ProductEditModal
+          target={editTarget === "CREATE" ? null : editTarget}
+          categories={categories}
+          includeCost={includeCost}
+          onClose={() => setEditTarget(null)}
+          onSaved={async (m) => { setMsg(m); await refresh(); }}
+        />
+      )}
+      {showCsvModal && (
+        <CsvPriceImportModal
+          onClose={() => setShowCsvModal(false)}
+          onDone={async (m) => { setMsg(m); await refresh(); }}
         />
       )}
     </div>

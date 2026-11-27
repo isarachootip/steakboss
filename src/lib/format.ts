@@ -1,5 +1,12 @@
+import { roundBaht } from "@/domain/money";
+
 export function formatBaht(amount: number): string {
-  return `฿${Number(amount || 0).toLocaleString("th-TH")}`;
+  const clean = roundBaht(Number(amount || 0));
+  const hasDecimals = Math.round(clean * 100) % 100 !== 0;
+  return `฿${clean.toLocaleString("th-TH", {
+    minimumFractionDigits: hasDecimals ? 2 : 0,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 export function formatDateTimeTH(value: string | Date): string {

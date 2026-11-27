@@ -21,6 +21,7 @@ async function main() {
     (await prisma.category.findMany()).map((c) => [c.slug, c.id])
   );
 
+  const validSlugs = new Set(SEED_PRODUCTS.map((p) => p.slug));
   for (const p of SEED_PRODUCTS) {
     const categoryId = catMap.get(p.catSlug)!;
     const { catSlug: _, ...data } = p;
@@ -30,6 +31,27 @@ async function main() {
       create: { ...data, categoryId },
     });
   }
+
+  // Clean up obsolete legacy demo products/categories that have no order history
+  const obsoleteProducts = await prisma.product.findMany({
+    where: {
+      slug: { notIn: Array.from(validSlugs) },
+      orderItems: { none: {} },
+    },
+    select: { id: true },
+  });
+  if (obsoleteProducts.length > 0) {
+    await prisma.product.deleteMany({
+      where: { id: { in: obsoleteProducts.map((o) => o.id) } },
+    });
+  }
+  const validCatSlugs = SEED_CATEGORIES.map((c) => c.slug);
+  await prisma.category.deleteMany({
+    where: {
+      slug: { notIn: validCatSlugs },
+      products: { none: {} },
+    },
+  });
 
   const setProd = await prisma.product.findUniqueOrThrow({
     where: { slug: "best-seller-set-4" },
@@ -72,6 +94,7 @@ async function main() {
         : {},
     create: {
       id: "default",
+      wholesaleMinPacks: 10,
       lineId: "@831uzirg",
       lineOaUrl: "https://line.me/R/ti/p/@831uzirg",
     },
@@ -113,7 +136,7 @@ async function main() {
     },
   });
 
-  const staffAccounts = [
+  const accounts = [
     {
       email: "owner@steakboss.local",
       name: "เจ้าของร้าน Steakboss",
@@ -132,8 +155,14 @@ async function main() {
       role: "PACKER",
       pass: "pack1234",
     },
+    {
+      email: "wholesale@steakboss.local",
+      name: "ตัวแทนขายส่ง Steakboss",
+      role: "WHOLESALE",
+      pass: "whole1234",
+    },
   ];
-  for (const s of staffAccounts) {
+  for (const s of accounts) {
     await prisma.user.upsert({
       where: { email: s.email },
       update: { name: s.name, role: s.role },
@@ -146,7 +175,9 @@ async function main() {
     });
   }
 
-  console.log("Seed completed: catalog, settings, landing content, 4 cooking guides, staff accounts.");
+  console.log(
+    `Seed completed: ${SEED_PRODUCTS.length} products across ${SEED_CATEGORIES.length} categories.`
+  );
 }
 
 main()

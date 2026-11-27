@@ -1,5 +1,9 @@
 import { db } from "@/lib/db";
-import { evaluateCoupon, type CouponType } from "@/domain/pricing";
+import {
+  evaluateCartPricing,
+  evaluateCoupon,
+  type CouponType,
+} from "@/domain/pricing";
 import { calculateShippingQuote } from "@/domain/shipping";
 import { getStoreSettings } from "./settings.service";
 import type { z } from "zod";
@@ -26,20 +30,44 @@ export async function loadProductsForCart(productIds: string[]) {
   });
 }
 
-export async function quoteCart(input: z.infer<typeof quoteRequestSchema>) {
+export async function quoteCart(
+  input: z.infer<typeof quoteRequestSchema>,
+  options?: { isWholesaleRole?: boolean }
+) {
   const [products, settings] = await Promise.all([
     loadProductsForCart(input.items.map((i) => i.productId)),
     getStoreSettings(),
   ]);
   const prodMap = new Map(products.map((p) => [p.id, p]));
 
-  let subtotalBaht = 0;
-  const resolvedLines = input.items.map((line) => {
+  const pricingInputs = input.items.map((line) => {
     const product = prodMap.get(line.productId);
     if (!product) throw new Error("มีสินค้าบางรายการไม่พร้อมจำหน่าย");
-    const lineTotal = product.priceBaht * line.quantity;
-    subtotalBaht += lineTotal;
-    return { product, quantity: line.quantity, lineTotal };
+    return {
+      productId: product.id,
+      quantity: line.quantity,
+      priceBaht: product.priceBaht,
+      wholesalePriceBaht: product.wholesalePriceBaht,
+      bulkPriceBaht: product.bulkPriceBaht,
+      bulkMinQty: product.bulkMinQty,
+    };
+  });
+
+  const cartPricing = evaluateCartPricing(pricingInputs, {
+    isWholesaleRole: Boolean(options?.isWholesaleRole),
+    wholesaleMinPacks: settings.wholesaleMinPacks,
+  });
+
+  const resolvedLines = cartPricing.lines.map((priced) => {
+    const product = prodMap.get(priced.productId)!;
+    return {
+      product,
+      quantity: priced.quantity,
+      unitPriceBaht: priced.unitPriceBaht,
+      retailUnitBaht: priced.retailUnitBaht,
+      lineTotal: priced.lineTotalBaht,
+      appliedTier: priced.appliedTier,
+    };
   });
 
   let couponResult: {
@@ -55,13 +83,13 @@ export async function quoteCart(input: z.infer<typeof quoteRequestSchema>) {
     const coupon = await db.coupon.findUnique({ where: { code } });
     const evaluated = evaluateCoupon(
       coupon ? { ...coupon, type: coupon.type as CouponType } : null,
-      subtotalBaht
+      cartPricing.subtotalBaht
     );
     couponResult = { ...evaluated, code: evaluated.valid ? code : undefined };
   }
 
   const shipping = calculateShippingQuote({
-    subtotalBaht,
+    subtotalBaht: cartPricing.subtotalBaht,
     discountBaht: couponResult.discountBaht,
     freeShippingByCoupon: couponResult.freeShipping,
     deliveryMethod: input.deliveryMethod,
@@ -72,7 +100,13 @@ export async function quoteCart(input: z.infer<typeof quoteRequestSchema>) {
 
   return {
     resolvedLines,
-    subtotalBaht,
+    pricingTier: cartPricing.pricingTier,
+    qualifiesWholesale: cartPricing.qualifiesWholesale,
+    totalPacks: cartPricing.totalPacks,
+    packsToWholesale: cartPricing.packsToWholesale,
+    retailSubtotalBaht: cartPricing.retailSubtotalBaht,
+    tierSavingsBaht: cartPricing.tierSavingsBaht,
+    subtotalBaht: cartPricing.subtotalBaht,
     discountBaht: couponResult.discountBaht,
     couponApplied: couponResult.valid ? couponResult.code ?? null : null,
     couponError:
