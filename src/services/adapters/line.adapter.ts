@@ -1,22 +1,33 @@
 import crypto from "node:crypto";
+import {
+  lineBotInfoSchema,
+  lineUserProfileSchema,
+  type LineBotInfo,
+  type LineUserProfile,
+} from "@/schemas/line.schema";
+import {
+  buildOrderFlexMessage,
+  type LineFlexBubble,
+  type LineMessagePayload,
+  type LineTextMessage,
+} from "./line-flex";
 
-export interface LineFlexBubble {
-  type: "flex";
-  altText: string;
-  contents: Record<string, unknown>;
-}
-
-export interface LineTextMessage {
-  type: "text";
-  text: string;
-}
-
-export type LineMessagePayload = LineTextMessage | LineFlexBubble;
+export {
+  buildOrderFlexMessage,
+  type LineFlexBubble,
+  type LineMessagePayload,
+  type LineTextMessage,
+};
 
 export interface LineSendResult {
   mode: "live" | "sandbox";
   ok: boolean;
   error?: string;
+}
+
+export interface LineClientOptions {
+  token?: string;
+  fetchFn?: typeof fetch;
 }
 
 export function verifyLineSignature(
@@ -25,7 +36,6 @@ export function verifyLineSignature(
   channelSecret: string = process.env.LINE_CHANNEL_SECRET || ""
 ): boolean {
   if (!channelSecret) {
-    // Allow sandbox webhook testing when channel secret is not configured
     return process.env.NODE_ENV !== "production";
   }
   if (!signatureHeader) return false;
@@ -39,16 +49,25 @@ export function verifyLineSignature(
   return crypto.timingSafeEqual(sigBuf, expBuf);
 }
 
-async function callLineApi(
-  endpoint: string,
-  payload: Record<string, unknown>
+function resolveEffectiveToken(options?: LineClientOptions): string {
+  if (process.env.NODE_ENV === "test" && !options?.fetchFn) {
+    return "";
+  }
+  return (options?.token ?? process.env.LINE_CHANNEL_ACCESS_TOKEN ?? "").trim();
+}
+
+async function callLineMessageApi(
+  endpoint: "reply" | "push",
+  payload: Record<string, unknown>,
+  options?: LineClientOptions
 ): Promise<LineSendResult> {
-  const token = process.env.LINE_CHANNEL_ACCESS_TOKEN?.trim();
+  const token = resolveEffectiveToken(options);
   if (!token) {
     return { mode: "sandbox", ok: true };
   }
+  const fetchImpl = options?.fetchFn ?? fetch;
   try {
-    const res = await fetch(`https://api.line.me/v2/bot/message/${endpoint}`, {
+    const res = await fetchImpl(`https://api.line.me/v2/bot/message/${endpoint}`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -71,77 +90,74 @@ async function callLineApi(
 
 export async function replyLineMessage(
   replyToken: string,
-  messages: LineMessagePayload[]
+  messages: LineMessagePayload[],
+  options?: LineClientOptions
 ): Promise<LineSendResult> {
-  return callLineApi("reply", { replyToken, messages });
+  return callLineMessageApi("reply", { replyToken, messages }, options);
 }
 
 export async function pushLineMessage(
   to: string,
-  messages: LineMessagePayload[]
+  messages: LineMessagePayload[],
+  options?: LineClientOptions
 ): Promise<LineSendResult> {
-  return callLineApi("push", { to, messages });
+  return callLineMessageApi("push", { to, messages }, options);
 }
 
-export function buildOrderFlexMessage(params: {
-  orderNo: string;
-  statusLabel: string;
-  totalBaht: number;
-  detailLine: string;
-  trackUrl: string;
-}): LineFlexBubble {
-  return {
-    type: "flex",
-    altText: `Steakboss ${params.orderNo}: ${params.statusLabel}`,
-    contents: {
-      type: "bubble",
-      header: {
-        type: "box",
-        layout: "vertical",
-        backgroundColor: "#151211",
-        contents: [
-          {
-            type: "text",
-            text: "STEAKBOSS",
-            color: "#ff6fb7",
-            weight: "bold",
-            size: "sm",
-          },
-          {
-            type: "text",
-            text: params.statusLabel,
-            color: "#f7f0ea",
-            weight: "bold",
-            size: "lg",
-          },
-        ],
-      },
-      body: {
-        type: "box",
-        layout: "vertical",
-        spacing: "sm",
-        contents: [
-          { type: "text", text: `เลขคำสั่งซื้อ: ${params.orderNo}`, weight: "bold" },
-          { type: "text", text: `ยอดรวม: ฿${params.totalBaht.toLocaleString("th-TH")}` },
-          { type: "text", text: params.detailLine, wrap: true, size: "sm", color: "#555555" },
-        ],
-      },
-      footer: {
-        type: "box",
-        layout: "vertical",
-        contents: [
-          {
-            type: "button",
-            style: "primary",
-            color: "#ff6fb7",
-            action: {
-              type: "uri",
-              label: "ติดตามคำสั่งซื้อ",
-              uri: params.trackUrl,
-            },
-          },
-        ],
-      },
-    },
-  };
+export async function getLineBotInfo(options?: LineClientOptions): Promise<{
+  ok: boolean;
+  mode: "live" | "sandbox";
+  bot?: LineBotInfo;
+  error?: string;
+}> {
+  const token = resolveEffectiveToken(options);
+  if (!token) {
+    return { ok: true, mode: "sandbox" };
+  }
+  const fetchImpl = options?.fetchFn ?? fetch;
+  try {
+    const res = await fetchImpl("https://api.line.me/v2/bot/info", {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) {
+      return { ok: false, mode: "live", error: `LINE API HTTP ${res.status}` };
+    }
+    const parsed = lineBotInfoSchema.safeParse(await res.json());
+    if (!parsed.success) {
+      return { ok: false, mode: "live", error: "ข้อมูลโปรไฟล์บอทจาก LINE ไม่ถูกต้อง" };
+    }
+    return { ok: true, mode: "live", bot: parsed.data };
+  } catch (err) {
+    return {
+      ok: false,
+      mode: "live",
+      error: err instanceof Error ? err.message : "เชื่อมต่อ LINE API ไม่สำเร็จ",
+    };
+  }
+}
+
+export async function getLineUserProfile(
+  userId: string,
+  options?: LineClientOptions
+): Promise<LineUserProfile | null> {
+  const token = resolveEffectiveToken(options);
+  if (!token || !userId || userId === "unknown-line-user") {
+    return null;
+  }
+  const fetchImpl = options?.fetchFn ?? fetch;
+  try {
+    const res = await fetchImpl(
+      `https://api.line.me/v2/bot/profile/${encodeURIComponent(userId)}`,
+      {
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }
+    );
+    if (!res.ok) return null;
+    const parsed = lineUserProfileSchema.safeParse(await res.json());
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
 }

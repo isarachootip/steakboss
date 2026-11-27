@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import type { AdminLineStatus } from "@/services/line-admin.service";
+import { LineIntegrationCard } from "./LineIntegrationCard";
 
 interface SettingsData {
   bkkShipBaht: number;
@@ -29,10 +31,12 @@ interface CouponItem {
 export function SettingsManager({
   initialSettings,
   initialCoupons,
+  initialLineStatus,
   isOwner,
 }: {
   initialSettings: SettingsData;
   initialCoupons: CouponItem[];
+  initialLineStatus: AdminLineStatus;
   isOwner: boolean;
 }) {
   const [settings, setSettings] = useState(initialSettings);
@@ -95,6 +99,14 @@ export function SettingsManager({
       </div>
 
       {msg && <div className="rounded-xl bg-sb-panel2 border border-sb-pink/40 px-4 py-2.5 text-sm text-sb-pink2">{msg}</div>}
+
+      <LineIntegrationCard
+        initialStatus={initialLineStatus}
+        isOwner={isOwner}
+        onLineSettingsSynced={(lineId, lineOaUrl) =>
+          setSettings((prev) => ({ ...prev, lineId, lineOaUrl }))
+        }
+      />
 
       <form onSubmit={saveSettings} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="sb-panel space-y-3">

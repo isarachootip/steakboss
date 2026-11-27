@@ -58,10 +58,23 @@ async function main() {
     });
   }
 
+  const existingSetting = await prisma.storeSetting.findUnique({
+    where: { id: "default" },
+  });
   await prisma.storeSetting.upsert({
     where: { id: "default" },
-    update: {},
-    create: { id: "default" },
+    update:
+      existingSetting?.lineId === "@steakboss"
+        ? {
+            lineId: "@831uzirg",
+            lineOaUrl: "https://line.me/R/ti/p/@831uzirg",
+          }
+        : {},
+    create: {
+      id: "default",
+      lineId: "@831uzirg",
+      lineOaUrl: "https://line.me/R/ti/p/@831uzirg",
+    },
   });
 
   const { badges, ...landingRest } = DEFAULT_LANDING_CONTENT;

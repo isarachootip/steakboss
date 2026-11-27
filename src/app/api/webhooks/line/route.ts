@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { replyLineMessage, verifyLineSignature } from "@/services/adapters/line.adapter";
+import {
+  getLineUserProfile,
+  replyLineMessage,
+  verifyLineSignature,
+} from "@/services/adapters/line.adapter";
 import { handleIncomingChatMessage } from "@/services/chatbot.service";
 
 interface LineWebhookEvent {
@@ -8,6 +12,40 @@ interface LineWebhookEvent {
   replyToken?: string;
   source?: { userId?: string; type?: string };
   message?: { type?: string; text?: string };
+}
+
+const DUMMY_VERIFY_TOKEN = "00000000000000000000000000000000";
+
+async function resolveLineCustomerName(
+  lineUserId: string,
+  linkedName?: string | null
+): Promise<string> {
+  if (linkedName) return linkedName;
+
+  const existingThread = await db.chatThread.findUnique({
+    where: {
+      channel_externalId: { channel: "LINE", externalId: lineUserId },
+    },
+    select: { customerName: true },
+  });
+  if (
+    existingThread?.customerName &&
+    !existingThread.customerName.startsWith("LINE ") &&
+    existingThread.customerName !== "ลูกค้า LINE OA"
+  ) {
+    return existingThread.customerName;
+  }
+
+  const profile = await getLineUserProfile(lineUserId);
+  if (profile?.displayName) {
+    return profile.displayName;
+  }
+
+  return `LINE ${lineUserId.slice(-6)}`;
+}
+
+export async function GET() {
+  return NextResponse.json({ ok: true, service: "steakboss-line-webhook" });
 }
 
 export async function POST(req: Request) {
@@ -36,16 +74,17 @@ export async function POST(req: Request) {
       where: { lineUserId },
       select: { id: true, name: true },
     });
+    const customerName = await resolveLineCustomerName(lineUserId, linkedUser?.name);
 
     const result = await handleIncomingChatMessage({
       channel: "LINE",
       externalId: lineUserId,
-      customerName: linkedUser?.name ?? `LINE ${lineUserId.slice(-6)}`,
+      customerName,
       userId: linkedUser?.id,
       content: ev.message.text,
     });
 
-    if (result.reply && ev.replyToken) {
+    if (result.reply && ev.replyToken && ev.replyToken !== DUMMY_VERIFY_TOKEN) {
       await replyLineMessage(ev.replyToken, [{ type: "text", text: result.reply }]);
     }
     replies.push({ userId: lineUserId, reply: result.reply, mode: result.mode });
