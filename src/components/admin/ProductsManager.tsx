@@ -53,6 +53,22 @@ export function ProductsManager({
     }
   }
 
+  async function handleDelete(product: EnrichedProduct) {
+    if (!window.confirm(`ยืนยันการลบสินค้า "${product.name}" (${product.sku}) หรือไม่?`)) {
+      return;
+    }
+    const res = await fetch(`/api/admin/products/${product.id}`, {
+      method: "DELETE",
+    });
+    const data = (await res.json()) as { ok?: boolean; error?: string };
+    if (!res.ok) {
+      setMsg(data.error || "ลบสินค้าไม่สำเร็จ");
+      return;
+    }
+    setMsg(`ลบสินค้า "${product.name}" เรียบร้อยแล้ว`);
+    await refresh();
+  }
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return products.filter((p) => {
@@ -118,6 +134,7 @@ export function ProductsManager({
         onToggleActive={(id, isActive) => quickPatch(id, { isActive })}
         onEdit={(p) => setEditTarget(p)}
         onAdjustStock={(p) => setStockTarget(p)}
+        onDelete={handleDelete}
       />
 
       {stockTarget && (

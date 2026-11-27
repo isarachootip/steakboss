@@ -121,3 +121,31 @@ export async function adjustProductStock(params: {
     return updated;
   });
 }
+
+export async function deleteProduct(id: string): Promise<void> {
+  const existing = await db.product.findUnique({
+    where: { id },
+    include: {
+      _count: {
+        select: {
+          orderItems: true,
+          includedInBundles: true,
+        },
+      },
+    },
+  });
+  if (!existing) {
+    throw new Error("ไม่พบสินค้าที่ต้องการลบ");
+  }
+  if (existing._count.orderItems > 0) {
+    throw new Error(
+      "ไม่สามารถลบสินค้านี้ได้เนื่องจากมีประวัติการสั่งซื้อแล้ว กรุณาปิดการขายแทน"
+    );
+  }
+  if (existing._count.includedInBundles > 0) {
+    throw new Error(
+      "สินค้านี้เป็นส่วนประกอบในสินค้าเซ็ตอยู่ กรุณาปิดการขายแทน"
+    );
+  }
+  await db.product.delete({ where: { id } });
+}

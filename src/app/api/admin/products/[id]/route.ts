@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireRole, MANAGER_ROLES } from "@/lib/auth/rbac";
-import { updateProduct } from "@/services/product.service";
+import { deleteProduct, updateProduct } from "@/services/product.service";
 import { updateProductSchema } from "@/schemas/product.schema";
 
 export async function PATCH(
@@ -28,6 +28,23 @@ export async function PATCH(
     return NextResponse.json({ product });
   } catch (err) {
     const message = err instanceof Error ? err.message : "แก้ไขสินค้าไม่สำเร็จ";
+    return NextResponse.json({ error: message }, { status: 400 });
+  }
+}
+
+export async function DELETE(
+  _req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  const guard = await requireRole(MANAGER_ROLES);
+  if (!guard.ok) return guard.response;
+
+  try {
+    const { id } = await context.params;
+    await deleteProduct(id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "ลบสินค้าไม่สำเร็จ";
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }

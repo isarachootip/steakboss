@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { db } from "@/lib/db";
-import { adjustProductStock, listAdminProducts } from "@/services/product.service";
+import {
+  adjustProductStock,
+  createProduct,
+  deleteProduct,
+  listAdminProducts,
+  updateProduct,
+} from "@/services/product.service";
+import { createProductSchema } from "@/schemas/product.schema";
 
 describe("product_backend service", () => {
   it("computes bundle stock dynamically from child SKUs, exposes wholesale/bulk tiers, and respects cost visibility", async () => {
@@ -47,5 +54,63 @@ describe("product_backend service", () => {
     });
     const afterRestore = await db.product.findUniqueOrThrow({ where: { id: kp.id } });
     expect(afterRestore.stockQty).toBe(before);
+  });
+
+  it("creates, updates images, deletes unused products, and blocks deleting bundle child SKUs", async () => {
+    const category = await db.category.findFirstOrThrow();
+    const stamp = Date.now();
+    const slug = `test-crud-steak-${stamp}`;
+
+    const unsafe = createProductSchema.safeParse({
+      slug,
+      sku: `SKU-${stamp}`,
+      name: "Unsafe Test",
+      categoryId: category.id,
+      weightGrams: 180,
+      priceBaht: 65,
+      platedImgUrl: "javascript:alert(1)",
+      packImgUrl: "/images/products/kp-pack.jpg",
+    });
+    expect(unsafe.success).toBe(false);
+
+    const parsed = createProductSchema.parse({
+      slug,
+      sku: `SKU-${stamp}`,
+      name: "สเต็กทดสอบ CRUD",
+      subtitle: "หมักสูตรพิเศษ",
+      description: "รายละเอียดทดสอบ",
+      categoryId: category.id,
+      weightGrams: 200,
+      priceBaht: 79,
+      wholesalePriceBaht: 60,
+      platedImgUrl: "/api/uploads/test-plated.jpg",
+      packImgUrl: "/api/uploads/test-pack.jpg",
+      wideImgUrl: "",
+      isNew: true,
+    });
+    expect(parsed.wideImgUrl).toBeNull();
+
+    const created = await createProduct(parsed);
+    try {
+      expect(created.platedImgUrl).toBe("/api/uploads/test-plated.jpg");
+      expect(created.isNew).toBe(true);
+
+      const updated = await updateProduct(created.id, {
+        platedImgUrl: "/api/uploads/test-plated-v2.jpg",
+        wideImgUrl: "/api/uploads/test-wide.jpg",
+      });
+      expect(updated.platedImgUrl).toBe("/api/uploads/test-plated-v2.jpg");
+      expect(updated.wideImgUrl).toBe("/api/uploads/test-wide.jpg");
+
+      await deleteProduct(created.id);
+      const gone = await db.product.findUnique({ where: { id: created.id } });
+      expect(gone).toBeNull();
+
+      // Bundle component SKU must not be deletable
+      const kp = await db.product.findUniqueOrThrow({ where: { slug: "pork-chop-kp" } });
+      await expect(deleteProduct(kp.id)).rejects.toThrow(/เซ็ต|สั่งซื้อ/);
+    } finally {
+      await db.product.deleteMany({ where: { slug } });
+    }
   });
 });

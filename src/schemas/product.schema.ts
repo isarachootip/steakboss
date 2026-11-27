@@ -11,6 +11,37 @@ export const bundleComponentSchema = z.object({
   quantity: z.number().int().min(1).max(50),
 });
 
+const isSafeProductImageUrl = (val: string): boolean => {
+  const trimmed = val.trim();
+  return (
+    trimmed.startsWith("/") ||
+    trimmed.startsWith("https://") ||
+    trimmed.startsWith("http://")
+  );
+};
+
+const requiredImageUrlSchema = z
+  .string()
+  .trim()
+  .min(1, "กรุณาระบุหรืออัปโหลดรูปสินค้า")
+  .max(400)
+  .refine(isSafeProductImageUrl, "URL รูปภาพต้องขึ้นต้นด้วย /, http:// หรือ https://");
+
+const optionalWideImageUrlSchema = z
+  .preprocess((val) => {
+    if (val === undefined || val === null) return null;
+    if (typeof val === "string") {
+      const trimmed = val.trim();
+      return trimmed.length === 0 ? null : trimmed;
+    }
+    return val;
+  }, z.string().max(400).nullable())
+  .refine(
+    (val) => val === null || isSafeProductImageUrl(val),
+    "URL รูปภาพต้องขึ้นต้นด้วย /, http:// หรือ https://"
+  )
+  .optional();
+
 export const createProductSchema = z.object({
   slug: z.string().trim().min(2).max(80).regex(/^[a-z0-9-]+$/, "slug ต้องเป็น a-z, 0-9 และ -"),
   sku: z.string().trim().min(2).max(40),
@@ -31,9 +62,9 @@ export const createProductSchema = z.object({
   isNew: z.boolean().default(false),
   isActive: z.boolean().default(true),
   tag: z.string().trim().max(40).default(""),
-  platedImgUrl: z.string().trim().min(1),
-  packImgUrl: z.string().trim().min(1),
-  wideImgUrl: z.string().trim().nullable().optional(),
+  platedImgUrl: requiredImageUrlSchema,
+  packImgUrl: requiredImageUrlSchema,
+  wideImgUrl: optionalWideImageUrlSchema,
   sortOrder: z.number().int().default(10),
   bundleComponents: z.array(bundleComponentSchema).optional(),
 });

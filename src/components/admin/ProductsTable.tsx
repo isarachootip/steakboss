@@ -1,6 +1,6 @@
 "use client";
 
-import { PackagePlus, Pencil } from "lucide-react";
+import { PackagePlus, Pencil, Trash2 } from "lucide-react";
 import type { EnrichedProduct } from "@/services/product.service";
 import { formatBaht } from "@/lib/format";
 
@@ -11,6 +11,7 @@ export function ProductsTable({
   onToggleActive,
   onEdit,
   onAdjustStock,
+  onDelete,
 }: {
   products: EnrichedProduct[];
   includeCost: boolean;
@@ -18,6 +19,7 @@ export function ProductsTable({
   onToggleActive: (id: string, isActive: boolean) => void;
   onEdit: (product: EnrichedProduct) => void;
   onAdjustStock: (product: EnrichedProduct) => void;
+  onDelete: (product: EnrichedProduct) => void;
 }) {
   return (
     <div className="sb-panel overflow-x-auto">
@@ -100,6 +102,17 @@ export function ProductsTable({
                       className="sb-btn-dark text-xs px-2.5"
                     >
                       <PackagePlus className="w-3.5 h-3.5" /> สต็อก
+                    </button>
+                  )}
+                  {canEdit && (
+                    <button
+                      type="button"
+                      onClick={() => onDelete(p)}
+                      className="sb-btn-dark text-xs px-2"
+                      aria-label={`ลบสินค้า ${p.name}`}
+                      title="ลบสินค้า"
+                    >
+                      <Trash2 className="w-3.5 h-3.5 text-sb-orange" />
                     </button>
                   )}
                 </div>

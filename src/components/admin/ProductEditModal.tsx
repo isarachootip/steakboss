@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X } from "lucide-react";
 import type { EnrichedProduct } from "@/services/product.service";
+import { ProductMediaFields } from "./ProductMediaFields";
 
 interface CategoryOption {
   id: string;
@@ -41,6 +42,8 @@ export function ProductEditModal({
     tag: target?.tag ?? "",
     platedImgUrl: target?.platedImgUrl ?? "/images/products/kp-plated.jpg",
     packImgUrl: target?.packImgUrl ?? "/images/products/kp-pack.jpg",
+    wideImgUrl: target?.wideImgUrl ?? "",
+    isNew: target?.isNew ?? false,
   });
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -54,6 +57,7 @@ export function ProductEditModal({
       ...form,
       bulkPriceBaht: form.bulkPriceBaht.trim() ? Number(form.bulkPriceBaht) : null,
       bulkMinQty: form.bulkPriceBaht.trim() ? Math.max(1, form.bulkMinQty || 10) : 0,
+      wideImgUrl: form.wideImgUrl.trim() ? form.wideImgUrl.trim() : null,
     };
 
     const url = isEdit ? `/api/admin/products/${target!.id}` : "/api/admin/products";
@@ -75,7 +79,7 @@ export function ProductEditModal({
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/70 p-4 overflow-y-auto">
-      <form onSubmit={submitForm} className="sb-panel w-full max-w-2xl space-y-4">
+      <form onSubmit={submitForm} className="sb-panel w-full max-w-2xl max-h-[90vh] overflow-y-auto space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-display font-bold text-xl">
             {isEdit ? "แก้ไขสินค้าและเรตราคา" : "เพิ่มสินค้าใหม่"}
@@ -149,6 +153,17 @@ export function ProductEditModal({
             <input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} className="sb-input text-sm" />
           </label>
         </div>
+
+        <ProductMediaFields
+          value={{
+            platedImgUrl: form.platedImgUrl,
+            packImgUrl: form.packImgUrl,
+            wideImgUrl: form.wideImgUrl,
+            description: form.description,
+            isNew: form.isNew,
+          }}
+          onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
+        />
 
         {err && <p className="text-xs text-red-400">{err}</p>}
         <div className="flex justify-end gap-2">
