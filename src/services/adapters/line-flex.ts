@@ -26,19 +26,19 @@ export function buildOrderFlexMessage(params: {
       header: {
         type: "box",
         layout: "vertical",
-        backgroundColor: "#151211",
+        backgroundColor: "#0b0a09",
         contents: [
           {
             type: "text",
             text: "STEAKBOSS",
-            color: "#ff6fb7",
+            color: "#d4af37",
             weight: "bold",
             size: "sm",
           },
           {
             type: "text",
             text: params.statusLabel,
-            color: "#f7f0ea",
+            color: "#f8f3e8",
             weight: "bold",
             size: "lg",
           },
@@ -61,7 +61,7 @@ export function buildOrderFlexMessage(params: {
           {
             type: "button",
             style: "primary",
-            color: "#ff6fb7",
+            color: "#c99e2e",
             action: {
               type: "uri",
               label: "ติดตามคำสั่งซื้อ",

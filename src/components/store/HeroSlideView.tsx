@@ -119,7 +119,7 @@ export function HeroSlideView({
             className="rounded-xl w-full"
           />
           {slide.packCardCaption && (
-            <p className="font-display font-bold text-xs text-[#3a1020] text-center pt-1.5">
+            <p className="font-display font-bold text-xs text-[#1a1205] text-center pt-1.5">
               {slide.packCardCaption}
             </p>
           )}

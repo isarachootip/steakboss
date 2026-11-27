@@ -104,7 +104,7 @@ export function GuideFormModal({
                   onClick={() => setForm({ ...form, equipmentLabel: preset })}
                   className={`px-3 py-1 rounded-full text-xs font-semibold transition ${
                     form.equipmentLabel === preset
-                      ? "bg-sb-pink text-[#2a0618]"
+                      ? "bg-sb-pink text-[#1a1205]"
                       : "bg-sb-panel2 text-sb-ink hover:bg-sb-line"
                   }`}
                 >

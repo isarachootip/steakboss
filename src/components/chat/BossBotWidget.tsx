@@ -91,7 +91,7 @@ export function BossBotWidget({ lineOaUrl }: { lineOaUrl: string }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="fixed right-5 bottom-5 z-40 w-14 h-14 rounded-full bg-sb-pink text-[#2a0618] shadow-2xl grid place-items-center hover:brightness-110 transition"
+        className="fixed right-5 bottom-5 z-40 w-14 h-14 rounded-full bg-sb-pink text-[#1a1205] shadow-2xl grid place-items-center hover:brightness-110 transition"
         aria-label="แชทกับบอสบอท"
       >
         {open ? <X className="w-6 h-6" /> : <MessageCircle className="w-6 h-6" />}
@@ -100,7 +100,7 @@ export function BossBotWidget({ lineOaUrl }: { lineOaUrl: string }) {
       {open && (
         <section className="fixed right-4 bottom-24 z-40 w-[min(380px,calc(100vw-2rem))] h-[min(540px,calc(100dvh-8rem))] bg-sb-panel border border-sb-line rounded-2xl shadow-2xl flex flex-col overflow-hidden">
           <div className="flex items-center gap-2.5 px-4 py-3 border-b border-sb-line bg-sb-panel2">
-            <div className="w-9 h-9 rounded-full bg-sb-pink text-[#2a0618] font-display font-extrabold text-sm grid place-items-center">
+            <div className="w-9 h-9 rounded-full bg-sb-pink text-[#1a1205] font-display font-extrabold text-sm grid place-items-center">
               SB
             </div>
             <div className="min-w-0 flex-1">
@@ -127,7 +127,7 @@ export function BossBotWidget({ lineOaUrl }: { lineOaUrl: string }) {
                 key={m.id ?? idx}
                 className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm whitespace-pre-wrap ${
                   m.sender === "CUSTOMER"
-                    ? "ml-auto bg-sb-pink text-[#2a0618] rounded-br-sm"
+                    ? "ml-auto bg-sb-pink text-[#1a1205] rounded-br-sm"
                     : m.sender === "ADMIN"
                       ? "bg-emerald-950 border border-emerald-700/50 text-emerald-100 rounded-bl-sm"
                       : "bg-sb-panel2 text-sb-ink rounded-bl-sm"

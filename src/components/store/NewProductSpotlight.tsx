@@ -25,7 +25,7 @@ export function NewProductSpotlight({ product }: { product: EnrichedProduct }) {
       </div>
 
       <div className="space-y-4">
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#2a0618]">
+        <span className="inline-block px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#1a1205]">
           สินค้าใหม่แนะนำ
         </span>
         <h2 className="font-display font-extrabold text-3xl sm:text-4xl">

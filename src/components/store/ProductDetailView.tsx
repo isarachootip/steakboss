@@ -49,7 +49,7 @@ export function ProductDetailView({
         <div className="space-y-5">
           <div className="flex flex-wrap gap-2">
             {product.isNew && (
-              <span className="px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#2a0618]">
+              <span className="px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#1a1205]">
                 สินค้าใหม่
               </span>
             )}

@@ -27,7 +27,7 @@ export function StaffMemberRowCard({
         <div className="flex flex-wrap items-center gap-2">
           <p className="font-display font-bold text-base">{member.name}</p>
           {isSelf && (
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-sb-pink text-[#2a0618] font-bold">
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-sb-pink text-[#1a1205] font-bold">
               คุณ
             </span>
           )}

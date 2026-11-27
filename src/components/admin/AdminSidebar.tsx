@@ -93,7 +93,7 @@ export function AdminSidebar({
               href={item.href}
               className={`shrink-0 flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition ${
                 active
-                  ? "bg-sb-pink text-[#2a0618]"
+                  ? "bg-sb-pink text-[#1a1205]"
                   : "text-sb-ink/85 hover:bg-sb-panel2"
               }`}
             >

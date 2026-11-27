@@ -41,7 +41,7 @@ export function GuideAdminCard({
         )}
         <div className="min-w-0 flex-1 space-y-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-display font-bold bg-sb-pink text-[#2a0618]">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-display font-bold bg-sb-pink text-[#1a1205]">
               {guide.equipmentLabel}
             </span>
             <span

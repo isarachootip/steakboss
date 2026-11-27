@@ -16,7 +16,7 @@ export function ProductCard({ product }: { product: EnrichedProduct }) {
       : product.priceBaht;
 
   return (
-    <article className="bg-sb-panel border border-sb-line rounded-2xl overflow-hidden flex flex-col transition hover:-translate-y-1 hover:border-[#5a4a42]">
+    <article className="bg-sb-panel border border-sb-line rounded-2xl overflow-hidden flex flex-col transition hover:-translate-y-1 hover:border-sb-gold/50">
       <div className="relative aspect-square bg-[#0d0b0a] overflow-hidden">
         <Link href={`/products/${product.slug}`} className="block w-full h-full">
           <img
@@ -29,7 +29,7 @@ export function ProductCard({ product }: { product: EnrichedProduct }) {
 
         <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
           {product.isNew && (
-            <span className="px-2.5 py-0.5 rounded-full text-xs font-display font-bold bg-sb-pink text-[#2a0618]">
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-display font-bold bg-sb-pink text-[#1a1205]">
               ใหม่
             </span>
           )}

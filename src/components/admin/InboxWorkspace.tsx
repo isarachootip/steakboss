@@ -148,7 +148,7 @@ export function InboxWorkspace() {
                       m.sender === "CUSTOMER"
                         ? "bg-sb-panel2"
                         : m.sender === "ADMIN"
-                          ? "ml-auto bg-sb-pink text-[#2a0618]"
+                          ? "ml-auto bg-sb-pink text-[#1a1205]"
                           : "ml-auto bg-emerald-950/70 border border-emerald-700/40"
                     }`}
                   >

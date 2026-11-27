@@ -45,7 +45,7 @@ export function ContentWorkspace({
           onClick={() => setTab("slides")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-display font-bold transition ${
             tab === "slides"
-              ? "bg-sb-pink text-[#2a0618]"
+              ? "bg-sb-pink text-[#1a1205]"
               : "text-sb-ink hover:bg-sb-panel2"
           }`}
         >
@@ -57,7 +57,7 @@ export function ContentWorkspace({
           onClick={() => setTab("popup")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-display font-bold transition ${
             tab === "popup"
-              ? "bg-sb-pink text-[#2a0618]"
+              ? "bg-sb-pink text-[#1a1205]"
               : "text-sb-ink hover:bg-sb-panel2"
           }`}
         >
@@ -69,7 +69,7 @@ export function ContentWorkspace({
           onClick={() => setTab("guides")}
           className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-display font-bold transition ${
             tab === "guides"
-              ? "bg-sb-pink text-[#2a0618]"
+              ? "bg-sb-pink text-[#1a1205]"
               : "text-sb-ink hover:bg-sb-panel2"
           }`}
         >

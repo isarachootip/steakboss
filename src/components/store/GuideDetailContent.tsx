@@ -36,7 +36,7 @@ export function GuideDetailContent({ guide }: { guide: CookingGuideDto }) {
 
       <header className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <span className="px-3.5 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#2a0618]">
+          <span className="px-3.5 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#1a1205]">
             {guide.equipmentLabel}
           </span>
           <button
@@ -122,7 +122,7 @@ export function GuideDetailContent({ guide }: { guide: CookingGuideDto }) {
           {guide.steps.map((step, idx) => (
             <div key={idx} className="sb-panel space-y-3">
               <div className="flex items-center gap-3">
-                <span className="w-9 h-9 rounded-full bg-sb-pink text-[#2a0618] font-display font-extrabold text-lg grid place-items-center shrink-0">
+                <span className="w-9 h-9 rounded-full bg-sb-pink text-[#1a1205] font-display font-extrabold text-lg grid place-items-center shrink-0">
                   {idx + 1}
                 </span>
                 <h3 className="font-display font-bold text-lg">{step.title}</h3>

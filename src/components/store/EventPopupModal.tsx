@@ -91,7 +91,7 @@ export function EventPopupModal({ popup }: { popup: EventPopupDto }) {
           type="button"
           onClick={dismiss}
           aria-label="ปิดป๊อปอัป"
-          className="absolute -top-3 -right-3 z-10 w-9 h-9 rounded-full bg-sb-panel2 hover:bg-sb-pink hover:text-[#2a0618] border border-sb-line text-white flex items-center justify-center shadow-lg transition"
+          className="absolute -top-3 -right-3 z-10 w-9 h-9 rounded-full bg-sb-panel2 hover:bg-sb-pink hover:text-[#1a1205] border border-sb-line text-white flex items-center justify-center shadow-lg transition"
         >
           <X className="w-4 h-4" />
         </button>

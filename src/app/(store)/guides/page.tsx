@@ -17,7 +17,7 @@ export default async function GuidesIndexPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12 sm:py-16 space-y-10">
       <div className="space-y-2 max-w-2xl">
-        <span className="inline-block px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#2a0618]">
+        <span className="inline-block px-3 py-1 rounded-full text-xs font-display font-bold bg-sb-pink text-[#1a1205]">
           คู่มือ & การแนะนำ Steakboss
         </span>
         <h1 className="font-display font-extrabold text-3xl sm:text-5xl">

@@ -101,7 +101,7 @@ export function HeroSlideFormModal({
               onClick={() => setMode("IMAGE_BANNER")}
               className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-display font-bold transition ${
                 form.mode === "IMAGE_BANNER"
-                  ? "bg-sb-pink text-[#2a0618]"
+                  ? "bg-sb-pink text-[#1a1205]"
                   : "text-sb-ink hover:bg-sb-panel2"
               }`}
             >
@@ -112,7 +112,7 @@ export function HeroSlideFormModal({
               onClick={() => setMode("TEXT_OVERLAY")}
               className={`flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl text-xs sm:text-sm font-display font-bold transition ${
                 form.mode === "TEXT_OVERLAY"
-                  ? "bg-sb-pink text-[#2a0618]"
+                  ? "bg-sb-pink text-[#1a1205]"
                   : "text-sb-ink hover:bg-sb-panel2"
               }`}
             >

@@ -46,7 +46,7 @@ export function CookingGuidesTabs({
               onClick={() => setActiveId(g.id)}
               className={`shrink-0 px-4 py-2.5 rounded-full font-display font-bold text-sm transition ${
                 isSelected
-                  ? "bg-sb-pink text-[#2a0618] shadow-lg"
+                  ? "bg-sb-pink text-[#1a1205] shadow-lg"
                   : "bg-sb-panel border border-sb-line text-sb-ink hover:bg-sb-panel2"
               }`}
             >
