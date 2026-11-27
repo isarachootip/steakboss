@@ -11,6 +11,7 @@ import {
   MessageSquare,
   BarChart3,
   Settings,
+  Shield,
   LogOut,
   ExternalLink,
 } from "lucide-react";
@@ -35,6 +36,12 @@ const NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin/inbox", label: "แชท LINE & Web", icon: MessageSquare },
   { href: "/admin/customers", label: "ลูกค้า CRM", icon: Users },
   { href: "/admin/reports", label: "รายงาน & การเงิน", icon: BarChart3 },
+  {
+    href: "/admin/staff",
+    label: "สิทธิ์ & พนักงาน",
+    icon: Shield,
+    roles: ["OWNER"],
+  },
   { href: "/admin/settings", label: "ตั้งค่า & คูปอง", icon: Settings },
 ];
 

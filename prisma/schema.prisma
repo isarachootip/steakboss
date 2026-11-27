@@ -10,6 +10,7 @@ datasource db {
 model User {
   id           String       @id @default(cuid())
   role         String       @default("CUSTOMER") // CUSTOMER | WHOLESALE | OWNER | ADMIN | PACKER
+  isActive     Boolean      @default(true)
   name         String
   phone        String?      @unique
   email        String?      @unique
@@ -272,4 +273,41 @@ model CookingGuide {
   updatedAt      DateTime @updatedAt
 
   @@index([isPublished, sortOrder])
+}
+
+model HeroSlide {
+  id                String    @id @default(cuid())
+  mode              String    @default("TEXT_OVERLAY") // TEXT_OVERLAY | IMAGE_BANNER
+  title             String
+  imageUrl          String
+  eyebrow           String    @default("")
+  headline          String    @default("")
+  subheadline       String    @default("")
+  packCardImgUrl    String    @default("")
+  packCardCaption   String    @default("")
+  badgesJson        String    @default("[]")
+  primaryCtaLabel   String    @default("")
+  primaryCtaHref    String    @default("")
+  secondaryCtaLabel String    @default("")
+  secondaryCtaHref  String    @default("")
+  linkHref          String    @default("")
+  sortOrder         Int       @default(0)
+  isActive          Boolean   @default(true)
+  startsAt          DateTime?
+  endsAt            DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([isActive, sortOrder])
+}
+
+model EventPopup {
+  id        String    @id @default("default")
+  isActive  Boolean   @default(false)
+  title     String    @default("")
+  imageUrl  String    @default("")
+  linkHref  String    @default("")
+  startsAt  DateTime?
+  endsAt    DateTime?
+  updatedAt DateTime  @updatedAt
 }

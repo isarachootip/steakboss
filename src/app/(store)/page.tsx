@@ -1,10 +1,12 @@
 import { listCatalogProducts } from "@/services/product.service";
 import { getStoreSettings, listCategories } from "@/services/settings.service";
+import { listPublishedGuides } from "@/services/content.service";
 import {
-  getLandingContent,
-  listPublishedGuides,
-} from "@/services/content.service";
-import { HeroSection } from "@/components/store/HeroSection";
+  getVisibleEventPopup,
+  listVisibleHeroSlides,
+} from "@/services/promo.service";
+import { HeroSlider } from "@/components/store/HeroSlider";
+import { EventPopupModal } from "@/components/store/EventPopupModal";
 import { NewProductSpotlight } from "@/components/store/NewProductSpotlight";
 import { MenuCatalog } from "@/components/store/MenuCatalog";
 import { LandingInfoSections } from "@/components/store/LandingInfoSections";
@@ -12,13 +14,15 @@ import { LandingInfoSections } from "@/components/store/LandingInfoSections";
 export const dynamic = "force-dynamic";
 
 export default async function LandingPage() {
-  const [products, categories, settings, landing, guides] = await Promise.all([
-    listCatalogProducts(),
-    listCategories(),
-    getStoreSettings(),
-    getLandingContent(),
-    listPublishedGuides(),
-  ]);
+  const [products, categories, settings, slides, eventPopup, guides] =
+    await Promise.all([
+      listCatalogProducts(),
+      listCategories(),
+      getStoreSettings(),
+      listVisibleHeroSlides(),
+      getVisibleEventPopup(),
+      listPublishedGuides(),
+    ]);
 
   const spotlight =
     products.find((p) => p.isNew && p.wideImgUrl) ??
@@ -27,10 +31,12 @@ export default async function LandingPage() {
 
   return (
     <>
-      <HeroSection
-        landing={landing}
+      <HeroSlider
+        slides={slides}
         freeShipThreshold={settings.freeShipThreshold}
       />
+
+      {eventPopup && <EventPopupModal popup={eventPopup} />}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 border-y border-sb-line bg-sb-bg">
         {[

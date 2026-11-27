@@ -26,6 +26,12 @@ export async function POST(req: Request) {
           { status: 401 }
         );
       }
+      if (!user.isActive) {
+        return NextResponse.json(
+          { error: "บัญชีนี้ถูกระงับการใช้งาน กรุณาติดต่อเจ้าของร้าน" },
+          { status: 403 }
+        );
+      }
       await setSessionCookie({
         userId: user.id,
         role: user.role as UserRole,

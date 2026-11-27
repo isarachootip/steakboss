@@ -116,6 +116,42 @@ async function main() {
     },
   });
 
+  const existingSlideCount = await prisma.heroSlide.count();
+  if (existingSlideCount === 0) {
+    await prisma.heroSlide.create({
+      data: {
+        mode: "TEXT_OVERLAY",
+        title: DEFAULT_LANDING_CONTENT.heroImgAlt,
+        imageUrl: DEFAULT_LANDING_CONTENT.heroImgUrl,
+        eyebrow: DEFAULT_LANDING_CONTENT.eyebrow,
+        headline: DEFAULT_LANDING_CONTENT.headline,
+        subheadline: DEFAULT_LANDING_CONTENT.subheadline,
+        packCardImgUrl: DEFAULT_LANDING_CONTENT.packCardImgUrl,
+        packCardCaption: DEFAULT_LANDING_CONTENT.packCardCaption,
+        badgesJson: JSON.stringify(badges),
+        primaryCtaLabel: DEFAULT_LANDING_CONTENT.primaryCtaLabel,
+        primaryCtaHref: DEFAULT_LANDING_CONTENT.primaryCtaHref,
+        secondaryCtaLabel: DEFAULT_LANDING_CONTENT.secondaryCtaLabel,
+        secondaryCtaHref: DEFAULT_LANDING_CONTENT.secondaryCtaHref,
+        linkHref: "",
+        sortOrder: 0,
+        isActive: true,
+      },
+    });
+  }
+
+  await prisma.eventPopup.upsert({
+    where: { id: "default" },
+    update: {},
+    create: {
+      id: "default",
+      isActive: false,
+      title: "",
+      imageUrl: "",
+      linkHref: "",
+    },
+  });
+
   for (const guide of DEFAULT_COOKING_GUIDES) {
     const { steps, tips, ...guideRest } = guide;
     await prisma.cookingGuide.upsert({
