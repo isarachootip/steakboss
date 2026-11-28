@@ -67,7 +67,7 @@ export function AdminSidebar({
     <aside className="no-print w-full lg:w-64 shrink-0 bg-sb-bgDeep border-b lg:border-b-0 lg:border-r border-sb-line p-4 flex flex-col gap-4">
       <div className="flex items-center justify-between lg:block">
         <Link href="/admin" className="font-display font-extrabold text-2xl">
-          STEAK<span className="text-sb-pink">BOSS</span>
+          STEAK<span className="text-sb-pink">BOSS-MAM</span>
           <span className="block text-[11px] font-normal text-sb-mute">
             Back-Office · {userRole}
           </span>

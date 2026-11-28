@@ -83,7 +83,7 @@ export function buildOrderFlexMessage(params: {
         layout: "vertical",
         backgroundColor: "#0b0a09",
         contents: [
-          { type: "text", text: "STEAKBOSS", color: "#d4af37", weight: "bold", size: "sm" },
+          { type: "text", text: "STEAKBOSS-MAM", color: "#d4af37", weight: "bold", size: "sm" },
           { type: "text", text: params.statusLabel, color: "#f8f3e8", weight: "bold", size: "lg" },
         ],
       },
@@ -128,7 +128,7 @@ export function buildPromptPayOrderFlexMessage(params: {
         layout: "vertical",
         backgroundColor: "#0b0a09",
         contents: [
-          { type: "text", text: "STEAKBOSS · รอชำระเงิน (QR พร้อมเพย์)", color: "#d4af37", weight: "bold", size: "xs" },
+          { type: "text", text: "STEAKBOSS-MAM · รอชำระเงิน (QR พร้อมเพย์)", color: "#d4af37", weight: "bold", size: "xs" },
           { type: "text", text: `ยอดโอน ฿${params.totalBaht.toLocaleString("th-TH")}`, color: "#f8f3e8", weight: "bold", size: "xl" },
         ],
       },

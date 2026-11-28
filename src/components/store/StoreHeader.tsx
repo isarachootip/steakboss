@@ -12,7 +12,7 @@ export function StoreHeader() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex items-center gap-4">
         <Link href="/" className="block leading-none">
           <span className="font-display font-extrabold text-2xl tracking-wide text-sb-ink">
-            STEAK<span className="text-sb-pink">BOSS</span>
+            STEAK<span className="text-sb-pink">BOSS-MAM</span>
           </span>
           <span className="block font-display text-[11px] text-sb-mute mt-0.5">
             สเต็กบอสส์ต้นตำรับ

@@ -40,7 +40,7 @@ export default function AdminLoginPage() {
       <div className="w-full max-w-md sb-panel space-y-6">
         <div className="text-center space-y-1">
           <div className="font-display font-extrabold text-3xl">
-            STEAK<span className="text-sb-pink">BOSS</span>
+            STEAK<span className="text-sb-pink">BOSS-MAM</span>
           </div>
           <p className="text-sm text-sb-mute">เข้าสู่ระบบหลังบ้าน (Back-Office)</p>
         </div>

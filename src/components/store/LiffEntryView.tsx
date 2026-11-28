@@ -98,7 +98,7 @@ export function LiffEntryView({
     <div className="max-w-md mx-auto px-4 py-20 text-center">
       <div className="sb-panel space-y-4 py-10">
         <Loader2 className="w-8 h-8 text-[#06C755] animate-spin mx-auto" />
-        <h1 className="font-display font-bold text-xl">STEAKBOSS · LINE</h1>
+        <h1 className="font-display font-bold text-xl">STEAKBOSS-MAM · LINE</h1>
         <p className="text-sm text-sb-mute">{statusText}</p>
       </div>
     </div>

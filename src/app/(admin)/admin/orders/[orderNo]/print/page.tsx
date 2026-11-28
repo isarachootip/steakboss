@@ -27,7 +27,7 @@ export default async function PrintOrderLabelPage({
       <div className="bg-white text-black rounded-2xl p-6 space-y-5 border border-neutral-300">
         <div className="flex justify-between items-start border-b border-neutral-300 pb-4">
           <div>
-            <p className="font-display font-extrabold text-2xl">STEAKBOSS</p>
+            <p className="font-display font-extrabold text-2xl">STEAKBOSS-MAM</p>
             <p className="text-xs">บจก. สเต็กบอสส์ต้นตำรับ จำกัด</p>
             <p className="text-xs">548/8 ม.2 ต.ป่าโมก อ.ป่าโมก จ.อ่างทอง 14130</p>
           </div>

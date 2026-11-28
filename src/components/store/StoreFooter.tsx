@@ -18,7 +18,7 @@ export function StoreFooter({
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="space-y-2">
           <div className="font-display font-extrabold text-2xl">
-            STEAK<span className="text-sb-pink">BOSS</span>
+            STEAK<span className="text-sb-pink">BOSS-MAM</span>
           </div>
           <p className="text-sm text-sb-mute">
             ผลิตโดย บริษัท สเต็กบอสส์ต้นตำรับ จำกัด
