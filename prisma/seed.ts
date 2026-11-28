@@ -112,20 +112,27 @@ async function main() {
   const existingSetting = await prisma.storeSetting.findUnique({
     where: { id: "default" },
   });
+  const settingUpdate: Record<string, string> = {};
+  if (existingSetting?.lineId === "@steakboss") {
+    settingUpdate.lineId = "@831uzirg";
+    settingUpdate.lineOaUrl = "https://line.me/R/ti/p/@831uzirg";
+  }
+  if (existingSetting?.promptpayId === "0812345678") {
+    settingUpdate.promptpayId = "0932896292";
+  }
+  if (existingSetting?.promptpayName === "บจก. สเต็กบอสส์ต้นตำรับ") {
+    settingUpdate.promptpayName = "วรัป เจริญโพธิ์";
+  }
   await prisma.storeSetting.upsert({
     where: { id: "default" },
-    update:
-      existingSetting?.lineId === "@steakboss"
-        ? {
-            lineId: "@831uzirg",
-            lineOaUrl: "https://line.me/R/ti/p/@831uzirg",
-          }
-        : {},
+    update: settingUpdate,
     create: {
       id: "default",
       wholesaleMinPacks: 10,
       lineId: "@831uzirg",
       lineOaUrl: "https://line.me/R/ti/p/@831uzirg",
+      promptpayId: "0932896292",
+      promptpayName: "วรัป เจริญโพธิ์",
     },
   });
 

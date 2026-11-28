@@ -2,52 +2,34 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LogOut, RotateCcw } from "lucide-react";
+import { Truck } from "lucide-react";
 import { useCart } from "./CartProvider";
-import { formatBaht, formatDateTimeTH, STATUS_BADGE_STYLE } from "@/lib/format";
-import { ORDER_STATUS_LABELS, isOrderStatus } from "@/domain/order";
-
-interface AccountUser {
-  id: string;
-  name: string;
-  phone: string | null;
-  role: string;
-  lineUserId: string | null;
-}
-
-interface OrderRow {
-  orderNo: string;
-  status: string;
-  totalBaht: number;
-  createdAt: string;
-  trackingNo: string;
-  items: Array<{
-    productId: string;
-    productName: string;
-    unitPriceBaht: number;
-    quantity: number;
-  }>;
-}
+import { CustomerProfileCard, type AccountUser } from "./CustomerProfileCard";
+import { AccountOrderCard, type AccountOrderRow } from "./AccountOrderCard";
 
 export function CustomerAccountView() {
   const [user, setUser] = useState<AccountUser | null>(null);
-  const [orders, setOrders] = useState<OrderRow[]>([]);
+  const [lineLoginEnabled, setLineLoginEnabled] = useState(true);
+  const [orders, setOrders] = useState<AccountOrderRow[]>([]);
   const [loading, setLoading] = useState(true);
-  const [phone, setPhone] = useState("");
-  const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [lineError, setLineError] = useState<string | null>(null);
   const { addItem, setDrawerOpen } = useCart();
 
   async function loadAccount() {
     setLoading(true);
     try {
       const meRes = await fetch("/api/auth/me");
-      const me = (await meRes.json()) as { user: AccountUser | null };
+      const me = (await meRes.json()) as {
+        user: AccountUser | null;
+        lineLoginEnabled?: boolean;
+      };
       setUser(me.user);
+      setLineLoginEnabled(me.lineLoginEnabled !== false);
       if (me.user) {
         const ordRes = await fetch("/api/store/orders");
         if (ordRes.ok) {
-          const data = (await ordRes.json()) as { orders: OrderRow[] };
+          const data = (await ordRes.json()) as { orders: AccountOrderRow[] };
           setOrders(data.orders);
         }
       }
@@ -57,29 +39,37 @@ export function CustomerAccountView() {
   }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("lineError");
+    if (err === "not_configured") {
+      setLineError("ระบบยังไม่ได้ตั้งค่า LINE_LOGIN_CHANNEL_ID และ LINE_LOGIN_CHANNEL_SECRET ในเซิร์ฟเวอร์");
+    } else if (err) {
+      setLineError("ไม่สามารถเข้าสู่ระบบด้วย LINE ได้ กรุณาลองใหม่อีกครั้ง");
+    }
     loadAccount();
   }, []);
-
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setError(null);
-    const res = await fetch("/api/auth/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mode: "customer", phone, name: name || undefined }),
-    });
-    const data = (await res.json()) as { error?: string };
-    if (!res.ok) {
-      setError(data.error || "เข้าสู่ระบบไม่สำเร็จ");
-      return;
-    }
-    await loadAccount();
-  }
 
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     setOrders([]);
+  }
+
+  function handleReorder(o: AccountOrderRow) {
+    o.items.forEach((it) =>
+      addItem(
+        {
+          productId: it.productId,
+          slug: "",
+          name: it.productName,
+          priceBaht: it.unitPriceBaht,
+          weightGrams: 180,
+          imgUrl: "/images/products/kp-plated.jpg",
+        },
+        it.quantity
+      )
+    );
+    setDrawerOpen(true);
   }
 
   if (loading) {
@@ -88,38 +78,60 @@ export function CustomerAccountView() {
 
   if (!user) {
     return (
-      <form onSubmit={handleLogin} className="sb-panel max-w-md mx-auto space-y-4">
-        <h1 className="font-display font-extrabold text-2xl">เข้าสู่ระบบลูกค้า</h1>
-        <p className="text-sm text-sb-mute">
-          ใช้เบอร์โทรศัพท์ที่สั่งซื้อ เพื่อดูประวัติออเดอร์และกดสั่งซ้ำในคลิกเดียว
-        </p>
-        <label className="block space-y-1 text-sm font-semibold">
-          <span>เบอร์โทรศัพท์ *</span>
-          <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0812345678" className="sb-input" />
-        </label>
-        <label className="block space-y-1 text-sm font-semibold">
-          <span>ชื่อของคุณ (สำหรับลูกค้าใหม่)</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="คุณสมชาย" className="sb-input" />
-        </label>
-        {error && <p className="text-sm text-red-400">{error}</p>}
-        <button type="submit" className="sb-btn w-full">เข้าสู่ระบบ</button>
-      </form>
+      <div className="sb-panel max-w-md mx-auto space-y-5 text-center">
+        <div className="space-y-2">
+          <h1 className="font-display font-extrabold text-2xl">เข้าสู่ระบบลูกค้า SteakBoss</h1>
+          <p className="text-sm text-sb-mute">
+            เข้าสู่ระบบด้วย LINE เพื่อบันทึกที่อยู่จัดส่ง ดูประวัติคำสั่งซื้อ ติดตามพัสดุได้ทันที และรับแจ้งเตือนสถานะรถเย็นทาง LINE
+          </p>
+        </div>
+
+        {lineError && (
+          <p className="text-xs text-sb-orange bg-red-950/40 border border-sb-orange/40 rounded-xl p-3">
+            {lineError}
+          </p>
+        )}
+
+        <a
+          href="/api/auth/line?next=/account"
+          className="w-full inline-flex items-center justify-center gap-2 rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-display font-bold py-3.5 px-6 text-sm transition"
+        >
+          เข้าสู่ระบบด้วย LINE
+        </a>
+
+        {!lineLoginEnabled && (
+          <p className="text-[11px] text-sb-mute">
+            (สำหรับผู้ดูแลร้าน: เพิ่ม LINE_LOGIN_CHANNEL_ID และ LINE_LOGIN_CHANNEL_SECRET ใน Coolify เพื่อเปิดใช้งานปุ่ม LINE Login)
+          </p>
+        )}
+
+        <div className="pt-3 border-t border-sb-line space-y-2 text-xs text-sb-mute">
+          <p>สั่งซื้อแบบไม่ได้ล็อกอิน? สามารถเช็กสถานะด้วยเลขคำสั่งซื้อและเบอร์โทร 4 ตัวท้ายได้</p>
+          <Link href="/track" className="sb-btn-dark inline-flex items-center gap-1.5 text-xs">
+            <Truck className="w-3.5 h-3.5" /> ติดตามพัสดุ (Guest)
+          </Link>
+        </div>
+      </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      <div className="sb-panel flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="font-display font-extrabold text-2xl">สวัสดี คุณ{user.name}</h1>
-          <p className="text-sm text-sb-mute">
-            {user.phone ? `เบอร์โทร: ${user.phone}` : ""} · สิทธิ์: {user.role}
-          </p>
+      {notice && (
+        <div className="rounded-xl bg-emerald-950/50 border border-emerald-700/50 px-4 py-2.5 text-sm text-emerald-200">
+          {notice}
         </div>
-        <button type="button" onClick={handleLogout} className="sb-btn-ghost text-sm">
-          <LogOut className="w-4 h-4" /> ออกจากระบบ
-        </button>
-      </div>
+      )}
+
+      <CustomerProfileCard
+        user={user}
+        onLogout={handleLogout}
+        onSaved={async (updated, msg) => {
+          setUser(updated);
+          setNotice(msg);
+          await loadAccount();
+        }}
+      />
 
       <div className="space-y-3">
         <h2 className="font-display font-bold text-xl">ประวัติคำสั่งซื้อของคุณ ({orders.length})</h2>
@@ -129,56 +141,7 @@ export function CustomerAccountView() {
             <Link href="/#menu" className="text-sb-pink2 underline">เลือกเมนูเลย</Link>
           </div>
         ) : (
-          orders.map((o) => (
-            <div key={o.orderNo} className="sb-panel space-y-3">
-              <div className="flex flex-wrap justify-between items-center gap-2">
-                <div>
-                  <span className="font-display font-bold text-lg text-sb-pink2">{o.orderNo}</span>
-                  <span className="text-xs text-sb-mute ml-2">{formatDateTimeTH(o.createdAt)}</span>
-                </div>
-                <span className={`px-3 py-0.5 rounded-full text-xs font-bold ${STATUS_BADGE_STYLE[o.status] ?? ""}`}>
-                  {isOrderStatus(o.status) ? ORDER_STATUS_LABELS[o.status] : o.status}
-                </span>
-              </div>
-              <div className="text-sm text-sb-mute space-y-0.5">
-                {o.items.map((it, idx) => (
-                  <p key={idx}>• {it.productName} × {it.quantity}</p>
-                ))}
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-sb-line">
-                <span className="font-display font-bold text-lg">{formatBaht(o.totalBaht)}</span>
-                <div className="flex gap-2">
-                  {o.status === "PENDING_PAYMENT" && (
-                    <Link href={`/orders/${o.orderNo}/pay`} className="sb-btn min-h-[36px] px-4 text-xs">
-                      ชำระเงิน / แนบสลิป
-                    </Link>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      o.items.forEach((it) =>
-                        addItem(
-                          {
-                            productId: it.productId,
-                            slug: "",
-                            name: it.productName,
-                            priceBaht: it.unitPriceBaht,
-                            weightGrams: 180,
-                            imgUrl: "/images/products/kp-plated.jpg",
-                          },
-                          it.quantity
-                        )
-                      );
-                      setDrawerOpen(true);
-                    }}
-                    className="sb-btn-dark text-xs"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" /> สั่งซ้ำ
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))
+          orders.map((o) => <AccountOrderCard key={o.orderNo} order={o} onReorder={handleReorder} />)
         )}
       </div>
     </div>

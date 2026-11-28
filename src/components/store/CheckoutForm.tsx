@@ -7,6 +7,16 @@ import { useCart } from "./CartProvider";
 import { formatBaht } from "@/lib/format";
 import { CheckoutSummary, type QuoteSummary } from "./CheckoutSummary";
 
+interface MeResponse {
+  user?: {
+    name?: string;
+    phone?: string | null;
+    email?: string | null;
+    addresses?: Array<{ addressLine: string; postalCode: string; isDefault: boolean }>;
+  } | null;
+  lineLoginEnabled?: boolean;
+}
+
 export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
   const router = useRouter();
   const { items, subtotalBaht, clearCart } = useCart();
@@ -20,16 +30,24 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
   const [couponCode, setCouponCode] = useState("");
   const [note, setNote] = useState("");
   const [quote, setQuote] = useState<QuoteSummary | null>(null);
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [lineLoginEnabled, setLineLoginEnabled] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
-      .then((d: { user?: { name?: string; phone?: string; email?: string } | null }) => {
-        if (d.user?.name) setName((p) => p || d.user!.name!);
-        if (d.user?.phone) setPhone((p) => p || d.user!.phone!);
-        if (d.user?.email) setEmail((p) => p || d.user!.email!);
+      .then((d: MeResponse) => {
+        setLineLoginEnabled(Boolean(d.lineLoginEnabled));
+        if (!d.user) return;
+        setLoggedIn(true);
+        if (d.user.name) setName((p) => p || d.user!.name!);
+        if (d.user.phone) setPhone((p) => p || d.user!.phone!);
+        if (d.user.email) setEmail((p) => p || d.user!.email!);
+        const addr = d.user.addresses?.find((a) => a.isDefault) ?? d.user.addresses?.[0];
+        if (addr?.addressLine) setAddressText((p) => p || addr.addressLine);
+        if (addr?.postalCode) setPostalCode((p) => p || addr.postalCode);
       })
       .catch(() => {});
   }, []);
@@ -43,10 +61,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-            deliveryMethod,
-            postalCode,
-            paymentMethod,
-            couponCode,
+            deliveryMethod, postalCode, paymentMethod, couponCode,
           }),
         });
         if (res.ok) setQuote((await res.json()) as QuoteSummary);
@@ -67,16 +82,8 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-          customerName: name,
-          customerPhone: phone,
-          customerEmail: email,
-          deliveryMethod,
-          addressText,
-          postalCode,
-          paymentMethod,
-          couponCode,
-          note,
-          channel: "WEB",
+          customerName: name, customerPhone: phone, customerEmail: email,
+          deliveryMethod, addressText, postalCode, paymentMethod, couponCode, note, channel: "WEB",
         }),
       });
       const data = (await res.json()) as { order?: { orderNo: string }; error?: string };
@@ -105,7 +112,15 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-8 items-start">
       <form onSubmit={onSubmit} className="sb-panel space-y-5">
-        <h1 className="font-display font-extrabold text-2xl sm:text-3xl">ข้อมูลจัดส่งและชำระเงิน</h1>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h1 className="font-display font-extrabold text-2xl sm:text-3xl">ข้อมูลจัดส่งและชำระเงิน</h1>
+          {!loggedIn && lineLoginEnabled && (
+            <a href="/api/auth/line?next=/checkout" className="rounded-full bg-[#06C755] hover:bg-[#05b34c] text-white font-display font-bold px-4 py-1.5 text-xs transition">
+              เข้าสู่ระบบด้วย LINE (จำที่อยู่ + แจ้งเตือน)
+            </a>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-1.5 text-sm font-semibold">
             <span>ชื่อ-นามสกุล *</span>
@@ -175,7 +190,6 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
           {submitting ? "กำลังบันทึกคำสั่งซื้อ..." : "ยืนยันคำสั่งซื้อ"}
         </button>
       </form>
-
       <CheckoutSummary items={items} subtotalBaht={subtotalBaht} quote={quote} />
     </div>
   );

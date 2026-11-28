@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatBaht, formatDateTimeTH, STATUS_BADGE_STYLE } from "@/lib/format";
 
 interface TrackedOrder {
@@ -18,7 +18,7 @@ interface TrackedOrder {
 
 const TIMELINE_STEPS = [
   { key: "CREATED", label: "รับคำสั่งซื้อ", match: ["PENDING_PAYMENT", "SLIP_SUBMITTED", "CONFIRMED", "PAID", "PACKING", "SHIPPED", "DELIVERED"] },
-  { key: "PAID", label: "ยืนยันชำระเงิน / ออเดอร์", match: ["CONFIRMED", "PAID", "PACKING", "SHIPPED", "DELIVERED"] },
+  { key: "PAID", label: "ยืนยันชำระเงิน / ตัดสต็อกแล้ว", match: ["CONFIRMED", "PAID", "PACKING", "SHIPPED", "DELIVERED"] },
   { key: "PACKING", label: "แพ็คลงกล่องโฟมเจลเย็น", match: ["PACKING", "SHIPPED", "DELIVERED"] },
   { key: "SHIPPED", label: "ส่งออกรถเย็นแล้ว", match: ["SHIPPED", "DELIVERED"] },
   { key: "DELIVERED", label: "จัดส่งสำเร็จ", match: ["DELIVERED"] },
@@ -30,6 +30,23 @@ export function TrackingTimeline({ initialOrderNo = "" }: { initialOrderNo?: str
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [order, setOrder] = useState<TrackedOrder | null>(null);
+
+  useEffect(() => {
+    if (!initialOrderNo.trim()) return;
+    let active = true;
+    fetch(`/api/store/track/${encodeURIComponent(initialOrderNo.trim())}`)
+      .then(async (res) => {
+        if (!res.ok) return;
+        const data = (await res.json()) as { order?: TrackedOrder };
+        if (active && data.order) {
+          setOrder(data.order);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [initialOrderNo]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,7 +84,7 @@ export function TrackingTimeline({ initialOrderNo = "" }: { initialOrderNo?: str
             required
             value={orderNo}
             onChange={(e) => setOrderNo(e.target.value.toUpperCase())}
-            placeholder="SB261121-AB12"
+            placeholder="SB261128-AB12"
             className="sb-input uppercase"
           />
         </label>
@@ -117,7 +134,7 @@ export function TrackingTimeline({ initialOrderNo = "" }: { initialOrderNo?: str
                 ขนส่งรถเย็น: <b>{order.carrier || "รถควบคุมอุณหภูมิ"}</b>
               </span>
               <span>
-                เลขพัสดุ: <b className="text-sb-pink2">{order.trackingNo}</b>
+                เลขพัสดุ: <b className="text-sb-pink2 font-mono">{order.trackingNo}</b>
               </span>
             </div>
           )}
@@ -150,6 +167,18 @@ export function TrackingTimeline({ initialOrderNo = "" }: { initialOrderNo?: str
                 );
               })}
             </ol>
+          )}
+
+          {order.events.length > 0 && (
+            <div className="border-t border-sb-line pt-4 space-y-1.5 text-xs">
+              <p className="font-display font-bold text-sm">บันทึกเหตุการณ์</p>
+              {order.events.map((ev, idx) => (
+                <div key={idx} className="flex flex-wrap justify-between gap-2 text-sb-mute">
+                  <span>• {ev.note || ev.status}</span>
+                  <span>{formatDateTimeTH(ev.createdAt)}</span>
+                </div>
+              ))}
+            </div>
           )}
 
           <div className="border-t border-sb-line pt-4 space-y-1.5 text-sm">

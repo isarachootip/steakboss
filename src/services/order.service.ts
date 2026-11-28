@@ -1,13 +1,18 @@
 import { db } from "@/lib/db";
 import { expandStockDeductions } from "@/domain/inventory";
 import { generateOrderNo, normalizePhone, type OrderStatus } from "@/domain/order";
+import { saveDefaultCustomerAddressInTx } from "./customer-address.service";
 import { notifyOrderStatus } from "./order-lifecycle.service";
 import { quoteCart } from "./quote.service";
 import type { z } from "zod";
 import type { checkoutRequestSchema } from "@/schemas/order.schema";
 
 export { quoteCart } from "./quote.service";
-export { lookupOrderForTracking, updateOrderByAdmin } from "./order-admin.service";
+export {
+  lookupOrderForAuthenticatedUser,
+  lookupOrderForTracking,
+  updateOrderByAdmin,
+} from "./order-admin.service";
 
 export async function createOrder(
   input: z.infer<typeof checkoutRequestSchema>,
@@ -22,16 +27,11 @@ export async function createOrder(
 
   let effectiveRole = userRole;
   if (!effectiveRole && userId) {
-    const u = await db.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
+    const u = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
     effectiveRole = u?.role;
   }
 
-  const quoted = await quoteCart(input, {
-    isWholesaleRole: effectiveRole === "WHOLESALE",
-  });
+  const quoted = await quoteCart(input, { isWholesaleRole: effectiveRole === "WHOLESALE" });
   if (quoted.shippingBaht === null || quoted.totalBaht === null || !quoted.zone) {
     throw new Error("กรุณากรอกรหัสไปรษณีย์ 5 หลักให้ถูกต้อง");
   }
@@ -59,8 +59,8 @@ export async function createOrder(
   );
 
   const orderNo = generateOrderNo();
-  const initialStatus: OrderStatus =
-    input.paymentMethod === "COD" ? "CONFIRMED" : "PENDING_PAYMENT";
+  const isCod = input.paymentMethod === "COD";
+  const initialStatus: OrderStatus = isCod ? "CONFIRMED" : "PENDING_PAYMENT";
   const expiresAt =
     initialStatus === "PENDING_PAYMENT"
       ? new Date(Date.now() + quoted.settings.unpaidExpireHours * 3600_000)
@@ -68,24 +68,30 @@ export async function createOrder(
 
   const order = await db.$transaction(async (tx) => {
     for (const d of deductions) {
-      const updated = await tx.product.updateMany({
-        where: { id: d.productId, stockQty: { gte: d.quantity } },
-        data: { stockQty: { decrement: d.quantity } },
+      const prod = await tx.product.findUnique({
+        where: { id: d.productId },
+        select: { id: true, name: true, stockQty: true },
       });
-      if (updated.count === 0) {
-        const p = await tx.product.findUnique({ where: { id: d.productId } });
-        throw new Error(`สินค้า "${p?.name ?? d.productId}" สต็อกไม่เพียงพอ`);
+      if (!prod || prod.stockQty < d.quantity) {
+        throw new Error(`สินค้า "${prod?.name ?? d.productId}" สต็อกไม่เพียงพอ`);
       }
-      await tx.stockMovement.create({
-        data: {
-          productId: d.productId,
-          deltaQty: -d.quantity,
-          type: "RESERVE",
-          reason: `สั่งซื้อ ${orderNo}`,
-          orderNo,
-          actorId: userId ?? null,
-        },
-      });
+      if (isCod) {
+        const updated = await tx.product.updateMany({
+          where: { id: d.productId, stockQty: { gte: d.quantity } },
+          data: { stockQty: { decrement: d.quantity } },
+        });
+        if (updated.count === 0) throw new Error(`สินค้า "${prod.name}" สต็อกไม่เพียงพอ`);
+        await tx.stockMovement.create({
+          data: {
+            productId: d.productId,
+            deltaQty: -d.quantity,
+            type: "DEDUCT",
+            reason: `ตัดสต็อกออเดอร์ COD ${orderNo}`,
+            orderNo,
+            actorId: userId ?? null,
+          },
+        });
+      }
     }
 
     if (quoted.couponApplied) {
@@ -93,6 +99,26 @@ export async function createOrder(
         where: { code: quoted.couponApplied },
         data: { usedCount: { increment: 1 } },
       });
+    }
+
+    if (userId) {
+      const phoneOwner = await tx.user.findUnique({ where: { phone }, select: { id: true } });
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          name: input.customerName,
+          ...(phoneOwner && phoneOwner.id !== userId ? {} : { phone }),
+        },
+      });
+      if (input.deliveryMethod === "COLD_CHAIN") {
+        await saveDefaultCustomerAddressInTx(tx, {
+          userId,
+          recipientName: input.customerName,
+          phone,
+          addressLine: input.addressText,
+          postalCode: input.postalCode,
+        });
+      }
     }
 
     return tx.order.create({
@@ -117,6 +143,7 @@ export async function createOrder(
         totalBaht: quoted.totalBaht!,
         couponCode: quoted.couponApplied,
         paymentMethod: input.paymentMethod,
+        stockDeducted: isCod,
         expiresAt,
         items: {
           create: quoted.resolvedLines.map((l) => ({
@@ -132,10 +159,9 @@ export async function createOrder(
         events: {
           create: {
             status: initialStatus,
-            note:
-              input.paymentMethod === "COD"
-                ? "สร้างออเดอร์เก็บเงินปลายทาง"
-                : "รอโอนชำระพร้อมเพย์",
+            note: isCod
+              ? "สร้างออเดอร์เก็บเงินปลายทาง (ตัดสต็อกแล้ว)"
+              : "รอโอนชำระพร้อมเพย์และตรวจสอบสลิป",
             actorId: userId ?? null,
           },
         },

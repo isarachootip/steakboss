@@ -13,9 +13,10 @@ model User {
   isActive     Boolean      @default(true)
   name         String
   phone        String?      @unique
-  email        String?      @unique
-  lineUserId   String?      @unique
-  passwordHash String?
+  email          String?      @unique
+  lineUserId     String?      @unique
+  linePictureUrl String?
+  passwordHash   String?
   createdAt    DateTime     @default(now())
   updatedAt    DateTime     @updatedAt
   addresses    Address[]
@@ -199,8 +200,8 @@ model StoreSetting {
   phone             String   @default("081-234-5678")
   lineId            String   @default("@steakboss")
   lineOaUrl         String   @default("https://line.me/R/ti/p/@steakboss")
-  promptpayId       String   @default("0812345678")
-  promptpayName     String   @default("บจก. สเต็กบอสส์ต้นตำรับ")
+  promptpayId       String   @default("0932896292")
+  promptpayName     String   @default("วรัป เจริญโพธิ์")
   facebookPage      String   @default("steakbossoriginal")
   unpaidExpireHours Int      @default(24)
   updatedAt         DateTime @updatedAt
@@ -231,6 +232,7 @@ model Order {
   carrier        String       @default("")
   trackingNo     String       @default("")
   codSettled     Boolean      @default(false)
+  stockDeducted  Boolean      @default(false)
   expiresAt      DateTime?
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt

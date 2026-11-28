@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { buildPromptPayPayload } from "@/domain/promptpay";
 import { getStoreSettings } from "./settings.service";
 import { computeSlipHash, verifySlipWithAdapter } from "./adapters/slip.adapter";
-import { notifyOrderStatus } from "./order-lifecycle.service";
+import { deductOrderStockInTx, notifyOrderStatus } from "./order-lifecycle.service";
 import type { z } from "zod";
 import type { reviewSlipSchema, submitSlipSchema } from "@/schemas/order.schema";
 
@@ -38,7 +38,10 @@ export async function submitOrderSlip(
   orderNo: string,
   input: z.infer<typeof submitSlipSchema>
 ) {
-  const order = await db.order.findUnique({ where: { orderNo } });
+  const [order, settings] = await Promise.all([
+    db.order.findUnique({ where: { orderNo } }),
+    getStoreSettings(),
+  ]);
   if (!order) throw new Error("ไม่พบคำสั่งซื้อนี้");
   if (order.paymentMethod !== "PROMPTPAY") {
     throw new Error("คำสั่งซื้อนี้เป็นแบบเก็บเงินปลายทาง ไม่ต้องแนบสลิป");
@@ -65,8 +68,9 @@ export async function submitOrderSlip(
   const result = await verifySlipWithAdapter({
     slipBase64: input.slipBase64,
     expectedAmountBaht: order.totalBaht,
+    expectedPromptPayId: settings.promptpayId,
+    expectedPromptPayName: settings.promptpayName,
     transRef: input.transRef,
-    autoVerifyDemo: input.autoVerifyDemo,
   });
 
   if (result.transRef) {
@@ -108,6 +112,14 @@ export async function submitOrderSlip(
       },
     });
 
+    let shortageNote = "";
+    if (paymentStatus === "VERIFIED") {
+      const deductRes = await deductOrderStockInTx(tx, order.id, order.orderNo, null);
+      if (deductRes.shortages.length > 0) {
+        shortageNote = ` · [แจ้งแอดมิน: สต็อกไม่พอ ${deductRes.shortages.join(", ")}]`;
+      }
+    }
+
     await tx.order.update({
       where: { id: order.id },
       data: {
@@ -117,10 +129,10 @@ export async function submitOrderSlip(
             status: nextOrderStatus,
             note:
               paymentStatus === "VERIFIED"
-                ? `ตรวจสลิปอัตโนมัติผ่าน (${result.provider})`
+                ? `ตรวจสลิปอัตโนมัติผ่าน (${result.provider}) และตัดสต็อกแล้ว${shortageNote}`
                 : paymentStatus === "REJECTED"
                   ? `สลิปไม่ผ่าน: ${result.reason ?? ""}`
-                  : "ลูกค้าแนบสลิปแล้ว รอแอดมินตรวจสอบ",
+                  : result.reason || "ลูกค้าแนบสลิปแล้ว รอแอดมินตรวจสอบ",
           },
         },
       },
@@ -151,6 +163,15 @@ export async function reviewOrderSlip(
         rejectReason: input.decision === "REJECT" ? input.rejectReason || "สลิปไม่ถูกต้อง" : null,
       },
     });
+
+    let shortageNote = "";
+    if (input.decision === "APPROVE") {
+      const deductRes = await deductOrderStockInTx(tx, order.id, order.orderNo, adminId);
+      if (deductRes.shortages.length > 0) {
+        shortageNote = ` · [สต็อกไม่พอ: ${deductRes.shortages.join(", ")}]`;
+      }
+    }
+
     await tx.order.update({
       where: { id: order.id },
       data: {
@@ -160,7 +181,7 @@ export async function reviewOrderSlip(
             status: nextStatus,
             note:
               input.decision === "APPROVE"
-                ? "แอดมินตรวจสอบสลิปและยืนยันรับยอดแล้ว"
+                ? `แอดมินตรวจสอบสลิปและยืนยันรับยอด + ตัดสต็อกแล้ว${shortageNote}`
                 : `ปฏิเสธสลิป: ${input.rejectReason || "กรุณาแนบสลิปใหม่"}`,
             actorId: adminId,
           },

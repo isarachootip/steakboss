@@ -18,7 +18,6 @@ export function SlipUploadForm({
   const [sizeInfo, setSizeInfo] = useState<string | null>(null);
   const [resizing, setResizing] = useState(false);
   const [transRef, setTransRef] = useState("");
-  const [autoVerifyDemo, setAutoVerifyDemo] = useState(true);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
@@ -53,21 +52,34 @@ export function SlipUploadForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           slipBase64,
-          transRef: transRef || undefined,
-          autoVerifyDemo,
+          transRef: transRef.trim() || undefined,
         }),
       });
-      const data = (await res.json()) as { orderStatus?: string; error?: string };
+      const data = (await res.json()) as {
+        orderStatus?: string;
+        reason?: string;
+        error?: string;
+      };
       if (!res.ok) {
         setFeedback({ ok: false, msg: data.error || "ส่งสลิปไม่สำเร็จ" });
-      } else {
-        if (data.orderStatus) onStatusChange(data.orderStatus);
+        return;
+      }
+
+      if (data.orderStatus) onStatusChange(data.orderStatus);
+      if (data.orderStatus === "PAID") {
         setFeedback({
           ok: true,
-          msg:
-            data.orderStatus === "PAID"
-              ? "ตรวจสอบสลิปสำเร็จ! ระบบยืนยันการชำระเงินแล้ว"
-              : "ได้รับสลิปเรียบร้อย รอแอดมินตรวจสอบสักครู่ครับ",
+          msg: "ตรวจสอบสลิปผ่านเรียบร้อย! ระบบยืนยันการชำระเงินและตัดสต็อกให้คุณแล้วครับ",
+        });
+      } else if (data.orderStatus === "PENDING_PAYMENT") {
+        setFeedback({
+          ok: false,
+          msg: data.reason || "สลิปไม่ผ่านการตรวจสอบ กรุณาตรวจสอบยอดโอน/บัญชีผู้รับแล้วแนบใหม่อีกครั้ง",
+        });
+      } else {
+        setFeedback({
+          ok: true,
+          msg: data.reason || "ได้รับสลิปเรียบร้อยแล้ว แอดมินจะตรวจสอบยอดและยืนยันตัดสต็อกให้เร็วที่สุดครับ",
         });
       }
     } catch {
@@ -79,7 +91,13 @@ export function SlipUploadForm({
 
   return (
     <form onSubmit={submitSlip} className="sb-panel space-y-4">
-      <h2 className="font-display font-bold text-xl">แนบสลิปการโอนเงิน</h2>
+      <div>
+        <h2 className="font-display font-bold text-xl">แนบสลิปการโอนเงิน</h2>
+        <p className="text-xs text-sb-mute mt-0.5">
+          ระบบจะตรวจสอบยอดโอนและบัญชีผู้รับ ก่อนยืนยันออเดอร์และตัดสต็อกให้ทันที
+        </p>
+      </div>
+
       <label className="block border-2 border-dashed border-sb-line rounded-2xl p-5 text-center cursor-pointer hover:border-sb-pink transition">
         <input
           type="file"
@@ -110,19 +128,9 @@ export function SlipUploadForm({
         <input
           value={transRef}
           onChange={(e) => setTransRef(e.target.value)}
-          placeholder="เช่น 20261121XXXXXX"
+          placeholder="เช่น 20261128XXXXXX"
           className="sb-input min-h-[40px] text-sm"
         />
-      </label>
-
-      <label className="flex items-center gap-2 text-xs text-sb-mute">
-        <input
-          type="checkbox"
-          checked={autoVerifyDemo}
-          onChange={(e) => setAutoVerifyDemo(e.target.checked)}
-          className="accent-sb-pink"
-        />
-        <span>โหมด Sandbox: จำลองตรวจสลิปผ่านอัตโนมัติทันที</span>
       </label>
 
       {feedback && (
