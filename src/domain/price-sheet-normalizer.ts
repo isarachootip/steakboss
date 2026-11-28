@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { resolveProductDefaultImages } from "./product-image-map";
 
 export type PriceSheetCategorySlug =
   | "pork"
@@ -149,34 +150,5 @@ export function resolveDefaultImages(
   categorySlug: PriceSheetCategorySlug,
   cleanName: string
 ): { platedImgUrl: string; packImgUrl: string; wideImgUrl: string | null } {
-  if (categorySlug === "pork") {
-    if (cleanName.includes("พอร์คชอป")) {
-      return { platedImgUrl: "/images/products/kp-plated.jpg", packImgUrl: "/images/products/kp-pack.jpg", wideImgUrl: null };
-    }
-    if (cleanName.includes("คู่หู")) {
-      return { platedImgUrl: "/images/products/set-plated.jpg", packImgUrl: "/images/products/set-pack.jpg", wideImgUrl: null };
-    }
-    return { platedImgUrl: "/images/products/pork-plated.jpg", packImgUrl: "/images/products/pork-pack.jpg", wideImgUrl: null };
-  }
-  if (categorySlug === "chicken") {
-    if (cleanName.includes("คลีน")) {
-      return { platedImgUrl: "/images/products/clean-plated.jpg", packImgUrl: "/images/products/clean-pack.jpg", wideImgUrl: null };
-    }
-    return { platedImgUrl: "/images/products/chk-plated.jpg", packImgUrl: "/images/products/chk-pack.jpg", wideImgUrl: null };
-  }
-  if (categorySlug === "beef") {
-    const isHero = cleanName.includes("CAPA") || cleanName.includes("ทีโบน PM");
-    return {
-      platedImgUrl: "/images/products/prem-plated.jpg",
-      packImgUrl: "/images/products/prem-pack.jpg",
-      wideImgUrl: isHero ? "/images/products/prem-wide.jpg" : null,
-    };
-  }
-  if (categorySlug === "fish") {
-    if (cleanName.includes("PREMIUM")) {
-      return { platedImgUrl: "/images/products/prem-plated.jpg", packImgUrl: "/images/products/prem-pack.jpg", wideImgUrl: null };
-    }
-    return { platedImgUrl: "/images/products/clean-plated.jpg", packImgUrl: "/images/products/clean-pack.jpg", wideImgUrl: null };
-  }
-  return { platedImgUrl: "/images/products/set-plated.jpg", packImgUrl: "/images/products/set-pack.jpg", wideImgUrl: null };
+  return resolveProductDefaultImages(categorySlug, cleanName);
 }

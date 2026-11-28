@@ -24,12 +24,36 @@ async function main() {
     (await prisma.category.findMany()).map((c) => [c.slug, c.id])
   );
 
+  const existingImagesBySlug = new Map(
+    (
+      await prisma.product.findMany({
+        select: { slug: true, platedImgUrl: true, packImgUrl: true, wideImgUrl: true },
+      })
+    ).map((row) => [row.slug, row])
+  );
+  const isCustomImage = (url: string | null | undefined): boolean =>
+    Boolean(url && !url.startsWith("/images/products/"));
+
   for (const p of SEED_PRODUCTS) {
     const categoryId = catMap.get(p.catSlug)!;
     const { catSlug: _, stockQty, costBaht, ...restData } = p;
+    const prev = existingImagesBySlug.get(p.slug);
+    const updateData = {
+      ...restData,
+      categoryId,
+      platedImgUrl: isCustomImage(prev?.platedImgUrl)
+        ? prev!.platedImgUrl
+        : restData.platedImgUrl,
+      packImgUrl: isCustomImage(prev?.packImgUrl)
+        ? prev!.packImgUrl
+        : restData.packImgUrl,
+      wideImgUrl: isCustomImage(prev?.wideImgUrl)
+        ? prev!.wideImgUrl
+        : restData.wideImgUrl,
+    };
     await prisma.product.upsert({
       where: { slug: p.slug },
-      update: { ...restData, categoryId },
+      update: updateData,
       create: { ...restData, stockQty, costBaht, categoryId },
     });
   }
