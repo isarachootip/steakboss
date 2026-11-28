@@ -1,15 +1,42 @@
+export interface LineQuickReplyItem {
+  type: "action";
+  action:
+    | { type: "message"; label: string; text: string }
+    | { type: "uri"; label: string; uri: string };
+}
+
+export interface LineQuickReply {
+  items: LineQuickReplyItem[];
+}
+
 export interface LineFlexBubble {
   type: "flex";
   altText: string;
   contents: Record<string, unknown>;
+  quickReply?: LineQuickReply;
 }
 
 export interface LineTextMessage {
   type: "text";
   text: string;
+  quickReply?: LineQuickReply;
 }
 
 export type LineMessagePayload = LineTextMessage | LineFlexBubble;
+
+export function buildSteakbossQuickReply(baseUrl: string): LineQuickReply {
+  const cleanBase = baseUrl.replace(/\/$/, "");
+  return {
+    items: [
+      { type: "action", action: { type: "message", label: "🥩 ดูเมนูสเต๊ก", text: "ดูเมนู" } },
+      { type: "action", action: { type: "uri", label: "🛒 สั่งซื้อเลย", uri: `${cleanBase}/liff` } },
+      { type: "action", action: { type: "message", label: "🚚 ค่าขนส่ง", text: "ค่าขนส่ง" } },
+      { type: "action", action: { type: "message", label: "📦 ติดตามสถานะ", text: "ติดตามสถานะ" } },
+      { type: "action", action: { type: "message", label: "🎁 โปรโมชั่น", text: "โปรโมชั่น" } },
+      { type: "action", action: { type: "message", label: "💬 คุยแอดมิน", text: "คุยแอดมิน" } },
+    ],
+  };
+}
 
 export function buildOrderFlexMessage(params: {
   orderNo: string;

@@ -5,6 +5,7 @@ import {
   replyLineMessage,
   verifyLineSignature,
 } from "@/services/adapters/line.adapter";
+import { buildSteakbossQuickReply } from "@/services/adapters/line-flex";
 import { handleIncomingChatMessage } from "@/services/chatbot.service";
 import {
   handleIncomingLineImage,
@@ -65,16 +66,29 @@ export async function POST(req: Request) {
 
   const replies: Array<{ userId: string; reply: string | null; mode: string }> = [];
 
+  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://steakboss.odmfood.online").replace(/\/$/, "");
+  const quickReply = buildSteakbossQuickReply(baseUrl);
+
   for (const ev of parsed.events ?? []) {
     const lineUserId = ev.source?.userId || "unknown-line-user";
     const canReply = Boolean(ev.replyToken && ev.replyToken !== DUMMY_VERIFY_TOKEN);
+
+    if (ev.type === "follow") {
+      const welcome =
+        "สวัสดีครับ ยินดีต้อนรับสู่ SteakBoss สเต๊กหมักแช่แข็งต้นตำรับ จ.อ่างทอง 🥩\nเลือกเมนูหรือบริการที่ต้องการจากปุ่มด้านล่างได้เลยครับ 👇";
+      if (canReply) {
+        await replyLineMessage(ev.replyToken!, [{ type: "text", text: welcome, quickReply }]);
+      }
+      replies.push({ userId: lineUserId, reply: welcome, mode: "FOLLOW" });
+      continue;
+    }
 
     if (ev.type === "postback" && ev.postback?.data) {
       const qs = new URLSearchParams(ev.postback.data);
       if (qs.get("action") === "confirm_delivered" && qs.get("orderNo")) {
         const res = await handleLineConfirmDeliveredPostback(lineUserId, qs.get("orderNo")!);
         if (canReply) {
-          await replyLineMessage(ev.replyToken!, [{ type: "text", text: res.reply }]);
+          await replyLineMessage(ev.replyToken!, [{ type: "text", text: res.reply, quickReply }]);
         }
         replies.push({ userId: lineUserId, reply: res.reply, mode: "POSTBACK" });
       }
@@ -97,7 +111,7 @@ export async function POST(req: Request) {
         messageId: ev.message.id,
       });
       if (canReply && res.reply) {
-        await replyLineMessage(ev.replyToken!, [{ type: "text", text: res.reply }]);
+        await replyLineMessage(ev.replyToken!, [{ type: "text", text: res.reply, quickReply }]);
       }
       replies.push({ userId: lineUserId, reply: res.reply, mode: "SLIP_IMAGE" });
       continue;
@@ -114,7 +128,7 @@ export async function POST(req: Request) {
       if (canReply && (result.flexMessages?.length || result.reply)) {
         const payload = result.flexMessages?.length
           ? result.flexMessages
-          : [{ type: "text" as const, text: result.reply! }];
+          : [{ type: "text" as const, text: result.reply!, quickReply }];
         await replyLineMessage(ev.replyToken!, payload);
       }
       replies.push({ userId: lineUserId, reply: result.reply, mode: result.mode });

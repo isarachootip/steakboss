@@ -71,7 +71,35 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
       });
       userId = user.id;
 
-      // 1. Typing "ดูเมนู" in LINE returns Category Flex Carousel
+      // 1. Greeting "สวัสดี" and "โปรโมชั่น" in LINE return Quick Reply pills
+      const greetReply = await handleIncomingChatMessage({
+        channel: "LINE",
+        externalId: lineId,
+        customerName: user.name,
+        userId: user.id,
+        content: "สวัสดี",
+      });
+      expect(greetReply.flexMessages?.[0]?.quickReply?.items.map((i) => i.action.label)).toEqual(
+        expect.arrayContaining([
+          "🥩 ดูเมนูสเต๊ก",
+          "🛒 สั่งซื้อเลย",
+          "🚚 ค่าขนส่ง",
+          "📦 ติดตามสถานะ",
+          "💬 คุยแอดมิน",
+        ])
+      );
+
+      const promoReply = await handleIncomingChatMessage({
+        channel: "LINE",
+        externalId: lineId,
+        customerName: user.name,
+        userId: user.id,
+        content: "โปรโมชั่น",
+      });
+      expect(promoReply.reply).toContain("โปรโมชั่น");
+      expect(promoReply.flexMessages?.[0]?.quickReply?.items.length).toBeGreaterThanOrEqual(5);
+
+      // 2. Typing "ดูเมนู" in LINE returns Category Flex Carousel + Quick Reply
       const menuReply = await handleIncomingChatMessage({
         channel: "LINE",
         externalId: lineId,
@@ -80,6 +108,7 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
         content: "ดูเมนู",
       });
       expect(menuReply.flexMessages?.length).toBe(1);
+      expect(menuReply.flexMessages?.[0]?.quickReply?.items.length).toBeGreaterThanOrEqual(5);
 
       // 2. Customer creates a LINE PromptPay order
       const order = await createOrder(
