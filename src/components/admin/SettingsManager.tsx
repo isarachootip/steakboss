@@ -116,7 +116,6 @@ export function SettingsManager({
           <label className="block text-sm">ต่างจังหวัด<input disabled={!isOwner} type="number" value={settings.upcShipBaht} onChange={(e) => setSettings({ ...settings, upcShipBaht: Number(e.target.value) })} className="sb-input mt-1" /></label>
           <label className="block text-sm">ส่งฟรีเมื่อครบ<input disabled={!isOwner} type="number" value={settings.freeShipThreshold} onChange={(e) => setSettings({ ...settings, freeShipThreshold: Number(e.target.value) })} className="sb-input mt-1" /></label>
           <label className="block text-sm">จำนวนแพ็คขั้นต่ำที่ได้ราคาส่งอัตโนมัติ (0 = เฉพาะสมาชิกขายส่ง)<input disabled={!isOwner} type="number" min={0} value={settings.wholesaleMinPacks} onChange={(e) => setSettings({ ...settings, wholesaleMinPacks: Number(e.target.value) })} className="sb-input mt-1" /></label>
-          <label className="block text-sm">ค่าธรรมเนียม COD<input disabled={!isOwner} type="number" value={settings.codFeeBaht} onChange={(e) => setSettings({ ...settings, codFeeBaht: Number(e.target.value) })} className="sb-input mt-1" /></label>
           <label className="block text-sm">ยกเลิกอัตโนมัติหากไม่โอนภายใน (ชั่วโมง)<input disabled={!isOwner} type="number" value={settings.unpaidExpireHours} onChange={(e) => setSettings({ ...settings, unpaidExpireHours: Number(e.target.value) })} className="sb-input mt-1" /></label>
         </div>
 

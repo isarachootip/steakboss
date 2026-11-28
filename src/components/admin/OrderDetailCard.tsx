@@ -131,7 +131,7 @@ export function OrderDetailCard({
             <p className="text-xs text-sb-mute">
               {o.payments.length > 0
                 ? `สถานะสลิปล่าสุด: ${o.payments[0]!.status}`
-                : "ยังไม่มีการแนบสลิป / COD"}
+                : "ยังไม่มีการแนบสลิป"}
             </p>
           )}
         </div>

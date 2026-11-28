@@ -72,7 +72,6 @@ export default async function LandingPage() {
         bkkShipBaht={settings.bkkShipBaht}
         upcShipBaht={settings.upcShipBaht}
         freeShipThreshold={settings.freeShipThreshold}
-        codFeeBaht={settings.codFeeBaht}
         lineId={settings.lineId}
         lineOaUrl={settings.lineOaUrl}
       />

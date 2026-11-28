@@ -111,28 +111,30 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
       expect(menuReply.flexMessages?.length).toBe(1);
       expect(menuReply.flexMessages?.[0]?.quickReply?.items.length).toBeGreaterThanOrEqual(5);
 
-      // 2b. Creating a COD order on LINE channel MUST be rejected (LINE requires QR PromptPay + slip)
-      await expect(
-        createOrder(
-          {
-            items: [{ productId: kp.id, quantity: 1 }],
-            customerName: user.name,
-            customerPhone: `08${String(stamp).slice(-8)}`,
-            customerEmail: "",
-            deliveryMethod: "FACTORY_PICKUP",
-            postalCode: "",
-            addressText: "",
-            paymentMethod: "COD",
-            couponCode: "",
-            note: "",
-            channel: "LINE",
-          },
-          user.id,
-          "CUSTOMER"
-        )
-      ).rejects.toThrow("QR พร้อมเพย์");
+      // 2b. Creating a COD order on LINE or WEB channel MUST be rejected (QR PromptPay + slip only)
+      for (const ch of ["LINE", "WEB"] as const) {
+        await expect(
+          createOrder(
+            {
+              items: [{ productId: kp.id, quantity: 1 }],
+              customerName: user.name,
+              customerPhone: `08${String(stamp).slice(-8)}`,
+              customerEmail: "",
+              deliveryMethod: "FACTORY_PICKUP",
+              postalCode: "",
+              addressText: "",
+              paymentMethod: "COD" as unknown as "PROMPTPAY",
+              couponCode: "",
+              note: "",
+              channel: ch,
+            },
+            user.id,
+            "CUSTOMER"
+          )
+        ).rejects.toThrow("QR พร้อมเพย์");
+      }
 
-      // 2c. Asking payment info on LINE before placing order should NOT advertise COD
+      // 2c. Asking payment info on LINE before placing order states PromptPay QR only (no COD)
       const payInfoReply = await handleIncomingChatMessage({
         channel: "LINE",
         externalId: lineId,
@@ -140,8 +142,8 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
         userId: user.id,
         content: "จ่ายเงินยังไง",
       });
-      expect(payInfoReply.reply).toContain("พร้อมเพย์");
-      expect(payInfoReply.reply).not.toContain("เก็บเงินปลายทาง");
+      expect(payInfoReply.reply).toContain("QR พร้อมเพย์");
+      expect(payInfoReply.reply).toContain("ไม่มีบริการเก็บเงินปลายทาง");
 
       // 3. Customer creates a LINE PromptPay order (must stay PENDING_PAYMENT & not deduct stock)
       const order = await createOrder(

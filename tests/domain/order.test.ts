@@ -5,6 +5,7 @@ import {
   isPaymentMethodAllowedForChannel,
   normalizePhone,
 } from "@/domain/order";
+import { checkoutRequestSchema } from "@/schemas/order.schema";
 
 describe("order domain", () => {
   it("enforces valid order state machine transitions", () => {
@@ -20,11 +21,21 @@ describe("order domain", () => {
     expect(canTransitionOrder("PENDING_PAYMENT", "SHIPPED")).toBe(false);
   });
 
-  it("restricts LINE channel orders to PromptPay QR only while keeping COD on Web", () => {
+  it("enforces PromptPay QR only across both LINE and Web (no COD)", () => {
     expect(isPaymentMethodAllowedForChannel("LINE", "PROMPTPAY")).toBe(true);
     expect(isPaymentMethodAllowedForChannel("LINE", "COD")).toBe(false);
     expect(isPaymentMethodAllowedForChannel("WEB", "PROMPTPAY")).toBe(true);
-    expect(isPaymentMethodAllowedForChannel("WEB", "COD")).toBe(true);
+    expect(isPaymentMethodAllowedForChannel("WEB", "COD")).toBe(false);
+
+    const parsedCod = checkoutRequestSchema.safeParse({
+      items: [{ productId: "prod-1", quantity: 1 }],
+      customerName: "ทดสอบ ปลายทาง",
+      customerPhone: "0812345678",
+      deliveryMethod: "FACTORY_PICKUP",
+      paymentMethod: "COD",
+      channel: "WEB",
+    });
+    expect(parsedCod.success).toBe(false);
   });
 
   it("generates order number with SBYYMMDD-XXXX format", () => {

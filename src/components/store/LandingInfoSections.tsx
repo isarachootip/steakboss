@@ -8,7 +8,6 @@ interface LandingInfoProps {
   bkkShipBaht: number;
   upcShipBaht: number;
   freeShipThreshold: number;
-  codFeeBaht: number;
   lineId: string;
   lineOaUrl: string;
 }
@@ -80,8 +79,11 @@ export function LandingInfoSections(props: LandingInfoProps) {
                   <td className="py-3 text-right font-bold text-sb-ok">ส่งฟรี</td>
                 </tr>
                 <tr>
-                  <td className="py-3">เก็บเงินปลายทาง (COD)</td>
-                  <td className="py-3 text-right font-bold">+{formatBaht(props.codFeeBaht)}</td>
+                  <td className="py-3">
+                    ช่องทางชำระเงิน
+                    <span className="block text-xs text-sb-mute">สแกน QR พร้อมเพย์ และตรวจสลิปก่อนยืนยันออเดอร์</span>
+                  </td>
+                  <td className="py-3 text-right font-bold">PromptPay QR</td>
                 </tr>
               </tbody>
             </table>

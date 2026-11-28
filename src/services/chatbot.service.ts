@@ -74,9 +74,6 @@ async function buildRuleReply(params: {
   if (/ปรุง|ย่าง|ทอด|ทำยังไง|ละลาย|หม้อทอด|ไมโครเวฟ|เวฟ/.test(s)) {
     return { text: "ละลายในช่องเย็นข้ามคืน (หรือแช่ทั้งซองในน้ำเย็น 30–40 นาที)\nกระทะไฟกลางค่อนแรง ข้างละ 4–6 นาที หรือหม้อทอดไร้น้ำมัน 180°C 12–15 นาที\nสุกทั่ว ไก่ 74°C หมู 70°C พัก 3 นาทีแล้วเสิร์ฟครับ" };
   }
-  if (/เก็บ|แช่แข็ง|ฟรีซ/.test(s)) {
-    return { text: "เก็บในช่องแช่แข็ง -18°C ครับ ละลายแล้วไม่ควรนำกลับไปแช่แข็งซ้ำ" };
-  }
   if (/จ่าย|โอน|พร้อมเพย์|qr|คิวอาร์|ชำระ|สลิป|ปลายทาง|cod/.test(s)) {
     if (channel === "LINE") {
       const pendingReply = await buildLinePendingPaymentReply({
@@ -84,11 +81,13 @@ async function buildRuleReply(params: {
         lineUserId: externalId,
       });
       if (pendingReply) return pendingReply;
-      return {
-        text: `การสั่งซื้อผ่าน LINE ชำระผ่าน QR พร้อมเพย์ ${settings.promptpayId} (${settings.promptpayName}) เท่านั้นครับ\nหลังสั่งซื้อระบบจะส่ง QR พร้อมเพย์ให้สแกน และส่งรูปสลิปในแชทนี้เพื่อตรวจสอบก่อนยืนยันออเดอร์ครับ`,
-      };
     }
-    return { text: `ชำระได้ 2 แบบ: โอนพร้อมเพย์ ${settings.promptpayId} (${settings.promptpayName}) พร้อมแนบสลิป หรือเก็บเงินปลายทาง (+฿${settings.codFeeBaht}) ครับ` };
+    return {
+      text: `ร้านรองรับเฉพาะการโอนชำระผ่าน QR พร้อมเพย์ ${settings.promptpayId} (${settings.promptpayName}) เท่านั้นครับ (ไม่มีบริการเก็บเงินปลายทาง)\nหลังสั่งซื้อกรุณาสแกน QR ชำระเงินและแนบสลิปเพื่อตรวจสอบก่อนยืนยันออเดอร์ครับ`,
+    };
+  }
+  if (/เก็บ|แช่แข็ง|ฟรีซ/.test(s)) {
+    return { text: "เก็บในช่องแช่แข็ง -18°C ครับ ละลายแล้วไม่ควรนำกลับไปแช่แข็งซ้ำ" };
   }
 
   const products = await listCatalogProducts();

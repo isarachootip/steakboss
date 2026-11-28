@@ -34,11 +34,10 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
 };
 
 export function isPaymentMethodAllowedForChannel(
-  channel: "WEB" | "LINE",
+  _channel: "WEB" | "LINE",
   paymentMethod: "PROMPTPAY" | "COD"
 ): boolean {
-  if (channel === "LINE") return paymentMethod === "PROMPTPAY";
-  return true;
+  return paymentMethod === "PROMPTPAY";
 }
 
 export function isOrderStatus(value: string): value is OrderStatus {

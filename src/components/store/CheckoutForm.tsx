@@ -17,7 +17,7 @@ interface MeResponse {
   lineLoginEnabled?: boolean;
 }
 
-export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
+export function CheckoutForm() {
   const router = useRouter();
   const { items, subtotalBaht, clearCart } = useCart();
   const [name, setName] = useState("");
@@ -26,7 +26,6 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
   const [deliveryMethod, setDeliveryMethod] = useState<"COLD_CHAIN" | "FACTORY_PICKUP">("COLD_CHAIN");
   const [addressText, setAddressText] = useState("");
   const [postalCode, setPostalCode] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState<"PROMPTPAY" | "COD">("PROMPTPAY");
   const [isLineChannel, setIsLineChannel] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [note, setNote] = useState("");
@@ -40,7 +39,6 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
     try {
       if (localStorage.getItem("sb_order_channel") === "LINE") {
         setIsLineChannel(true);
-        setPaymentMethod("PROMPTPAY");
       }
     } catch {}
     fetch("/api/auth/me")
@@ -68,7 +66,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
-            deliveryMethod, postalCode, paymentMethod, couponCode,
+            deliveryMethod, postalCode, paymentMethod: "PROMPTPAY", couponCode,
           }),
         });
         if (res.ok) setQuote((await res.json()) as QuoteSummary);
@@ -77,7 +75,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
       }
     }, 200);
     return () => clearTimeout(timer);
-  }, [items, deliveryMethod, postalCode, paymentMethod, couponCode]);
+  }, [items, deliveryMethod, postalCode, couponCode]);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -85,14 +83,13 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
     setSubmitting(true);
     try {
       const orderChannel = isLineChannel ? "LINE" : "WEB";
-      const effectivePayment = isLineChannel ? "PROMPTPAY" : paymentMethod;
       const res = await fetch("/api/store/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
           customerName: name, customerPhone: phone, customerEmail: email,
-          deliveryMethod, addressText, postalCode, paymentMethod: effectivePayment, couponCode, note, channel: orderChannel,
+          deliveryMethod, addressText, postalCode, paymentMethod: "PROMPTPAY", couponCode, note, channel: orderChannel,
         }),
       });
       const data = (await res.json()) as { order?: { orderNo: string }; error?: string };
@@ -111,9 +108,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
 
   const submitLabel = submitting
     ? "กำลังบันทึกคำสั่งซื้อ..."
-    : isLineChannel || paymentMethod === "PROMPTPAY"
-      ? "สร้างออเดอร์และรับ QR ชำระเงิน"
-      : "ยืนยันคำสั่งซื้อ (เก็บเงินปลายทาง)";
+    : "สร้างออเดอร์และรับ QR ชำระเงิน";
 
   if (items.length === 0) {
     return (
@@ -176,7 +171,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
           </div>
         )}
 
-        <CheckoutPaymentSection isLineChannel={isLineChannel} paymentMethod={paymentMethod} codFeeBaht={codFeeBaht} onChange={setPaymentMethod} />
+        <CheckoutPaymentSection isLineChannel={isLineChannel} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-1.5 text-sm font-semibold">

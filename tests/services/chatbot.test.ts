@@ -53,6 +53,14 @@ describe("LINE & BossBot chat service", () => {
     expect(q.reply).toContain("180°C");
     expect(q.reply).toContain("/guides/air-fryer");
 
+    const payWeb = await handleIncomingChatMessage({
+      channel: "WEB",
+      externalId,
+      content: "มีเก็บเงินปลายทางไหม",
+    });
+    expect(payWeb.reply).toContain("QR พร้อมเพย์");
+    expect(payWeb.reply).toContain("ไม่มีบริการเก็บเงินปลายทาง");
+
     await db.chatThread.delete({ where: { id: q.threadId } });
   });
 });

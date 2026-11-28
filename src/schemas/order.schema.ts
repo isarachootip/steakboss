@@ -9,7 +9,14 @@ export const quoteRequestSchema = z.object({
   items: z.array(cartLineSchema).min(1),
   deliveryMethod: z.enum(["COLD_CHAIN", "FACTORY_PICKUP"]),
   postalCode: z.string().trim().max(10).optional().default(""),
-  paymentMethod: z.enum(["PROMPTPAY", "COD"]),
+  paymentMethod: z
+    .enum(["PROMPTPAY"], {
+      errorMap: () => ({
+        message: "ร้านรองรับเฉพาะการโอนชำระผ่าน QR พร้อมเพย์เท่านั้น (ไม่มีบริการเก็บเงินปลายทาง)",
+      }),
+    })
+    .optional()
+    .default("PROMPTPAY"),
   couponCode: z.string().trim().max(32).optional().default(""),
 });
 

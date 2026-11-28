@@ -92,12 +92,6 @@ export function CheckoutSummary({
                 : formatBaht(quote.shippingBaht)}
           </span>
         </div>
-        {(quote?.codFeeBaht ?? 0) > 0 && (
-          <div className="flex justify-between">
-            <span className="text-sb-mute">ค่าเก็บเงินปลายทาง</span>
-            <span>+{formatBaht(quote!.codFeeBaht)}</span>
-          </div>
-        )}
       </div>
       <hr className="border-sb-line" />
       <div className="flex justify-between items-baseline">

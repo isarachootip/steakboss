@@ -28,7 +28,7 @@ export async function createOrder(
   if (phone.length < 9) throw new Error("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง");
   if (!isPaymentMethodAllowedForChannel(input.channel, input.paymentMethod)) {
     throw new Error(
-      "การสั่งซื้อผ่าน LINE รองรับเฉพาะการโอนชำระผ่าน QR พร้อมเพย์และตรวจสอบสลิปก่อนยืนยันเท่านั้น"
+      "ร้านรองรับเฉพาะการโอนชำระผ่าน QR พร้อมเพย์และตรวจสอบสลิปก่อนยืนยันเท่านั้น (ไม่มีบริการเก็บเงินปลายทาง)"
     );
   }
   if (input.deliveryMethod === "COLD_CHAIN" && !input.addressText.trim()) {
@@ -69,12 +69,10 @@ export async function createOrder(
   );
 
   const orderNo = generateOrderNo();
-  const isCod = input.paymentMethod === "COD";
-  const initialStatus: OrderStatus = isCod ? "CONFIRMED" : "PENDING_PAYMENT";
-  const expiresAt =
-    initialStatus === "PENDING_PAYMENT"
-      ? new Date(Date.now() + quoted.settings.unpaidExpireHours * 3600_000)
-      : null;
+  const initialStatus: OrderStatus = "PENDING_PAYMENT";
+  const expiresAt = new Date(
+    Date.now() + quoted.settings.unpaidExpireHours * 3600_000
+  );
 
   const order = await db.$transaction(async (tx) => {
     for (const d of deductions) {
@@ -84,23 +82,6 @@ export async function createOrder(
       });
       if (!prod || prod.stockQty < d.quantity) {
         throw new Error(`สินค้า "${prod?.name ?? d.productId}" สต็อกไม่เพียงพอ`);
-      }
-      if (isCod) {
-        const updated = await tx.product.updateMany({
-          where: { id: d.productId, stockQty: { gte: d.quantity } },
-          data: { stockQty: { decrement: d.quantity } },
-        });
-        if (updated.count === 0) throw new Error(`สินค้า "${prod.name}" สต็อกไม่เพียงพอ`);
-        await tx.stockMovement.create({
-          data: {
-            productId: d.productId,
-            deltaQty: -d.quantity,
-            type: "DEDUCT",
-            reason: `ตัดสต็อกออเดอร์ COD ${orderNo}`,
-            orderNo,
-            actorId: userId ?? null,
-          },
-        });
       }
     }
 
@@ -149,11 +130,11 @@ export async function createOrder(
         subtotalBaht: quoted.subtotalBaht,
         discountBaht: quoted.discountBaht,
         shippingBaht: quoted.shippingBaht!,
-        codFeeBaht: quoted.codFeeBaht,
+        codFeeBaht: 0,
         totalBaht: quoted.totalBaht!,
         couponCode: quoted.couponApplied,
-        paymentMethod: input.paymentMethod,
-        stockDeducted: isCod,
+        paymentMethod: "PROMPTPAY",
+        stockDeducted: false,
         expiresAt,
         items: {
           create: quoted.resolvedLines.map((l) => ({
@@ -169,9 +150,7 @@ export async function createOrder(
         events: {
           create: {
             status: initialStatus,
-            note: isCod
-              ? "สร้างออเดอร์เก็บเงินปลายทาง (ตัดสต็อกแล้ว)"
-              : "รอโอนชำระพร้อมเพย์และตรวจสอบสลิป",
+            note: "รอโอนชำระพร้อมเพย์และตรวจสอบสลิป",
             actorId: userId ?? null,
           },
         },
