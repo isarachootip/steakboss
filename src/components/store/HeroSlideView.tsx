@@ -21,7 +21,7 @@ export function HeroSlideView({
         <img
           src={slide.imageUrl}
           alt={slide.title}
-          className="absolute inset-0 w-full h-full object-cover object-center"
+          className="absolute inset-0 w-full h-full object-cover object-top"
         />
       </div>
     );
@@ -58,7 +58,7 @@ export function HeroSlideView({
       <img
         src={slide.imageUrl}
         alt={slide.title}
-        className="absolute inset-0 w-full h-full object-cover object-[70%_50%]"
+        className="absolute inset-0 w-full h-full object-cover object-[70%_0%]"
       />
       <div className="absolute inset-0 bg-gradient-to-r from-[#0d0b0a]/95 via-[#0d0b0a]/75 to-transparent" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#0d0b0a]/90 via-transparent to-transparent" />

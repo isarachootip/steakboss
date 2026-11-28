@@ -96,7 +96,7 @@ export function GuideDetailContent({ guide }: { guide: CookingGuideDto }) {
               <img
                 src={guide.coverImgUrl}
                 alt={guide.title}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover object-top"
               />
             </div>
           )}
@@ -134,7 +134,7 @@ export function GuideDetailContent({ guide }: { guide: CookingGuideDto }) {
                 <img
                   src={step.imageUrl}
                   alt={step.title}
-                  className="w-full rounded-xl object-cover aspect-[16/10] border border-sb-line"
+                  className="w-full rounded-xl object-cover object-top aspect-[16/10] border border-sb-line"
                 />
               )}
             </div>

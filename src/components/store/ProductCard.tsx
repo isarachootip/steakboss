@@ -22,12 +22,12 @@ export function ProductCard({ product }: { product: EnrichedProduct }) {
           <img
             src={showPack ? product.packImgUrl : product.platedImgUrl}
             alt={product.name}
-            className="w-full h-full object-cover transition duration-300"
+            className="w-full h-full object-cover object-top transition duration-300"
             loading="lazy"
           />
         </Link>
 
-        <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+        <div className="absolute top-7 left-2.5 flex flex-wrap gap-1.5">
           {product.isNew && (
             <span className="px-2.5 py-0.5 rounded-full text-xs font-display font-bold bg-sb-pink text-[#1a1205]">
               ใหม่

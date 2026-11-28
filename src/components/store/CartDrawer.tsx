@@ -74,7 +74,7 @@ export function CartDrawer({ freeShipThreshold }: { freeShipThreshold: number })
                   <img
                     src={item.imgUrl}
                     alt={item.name}
-                    className="w-[68px] h-[68px] rounded-xl object-cover bg-black"
+                    className="w-[68px] h-[68px] rounded-xl object-cover object-top bg-black"
                   />
                   <div className="min-w-0">
                     <p className="font-semibold text-sm truncate">{item.name}</p>

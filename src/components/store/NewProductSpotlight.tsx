@@ -15,12 +15,12 @@ export function NewProductSpotlight({ product }: { product: EnrichedProduct }) {
         <img
           src={product.wideImgUrl || product.platedImgUrl}
           alt={product.name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
         />
         <img
           src={product.packImgUrl}
           alt={`แพ็คเกจ ${product.name}`}
-          className="absolute left-4 bottom-4 w-24 sm:w-32 aspect-square object-cover rounded-xl border-4 border-white shadow-2xl"
+          className="absolute left-4 bottom-4 w-24 sm:w-32 aspect-square object-cover object-top rounded-xl border-4 border-white shadow-2xl"
         />
       </div>
 

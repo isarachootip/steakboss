@@ -17,7 +17,7 @@ export function ProductGallery({
         <img
           src={images[activeIdx]?.src ?? images[0]?.src}
           alt={name}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover object-top"
         />
       </div>
       <div className="flex gap-3">
@@ -30,7 +30,7 @@ export function ProductGallery({
               activeIdx === i ? "border-sb-pink" : "border-sb-line opacity-70"
             }`}
           >
-            <img src={g.src} alt={g.label} className="w-full h-full object-cover" />
+            <img src={g.src} alt={g.label} className="w-full h-full object-cover object-top" />
           </button>
         ))}
       </div>

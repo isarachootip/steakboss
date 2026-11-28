@@ -178,7 +178,7 @@ export function ProductDetailView({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             {related.map((p) => (
               <Link key={p.id} href={`/products/${p.slug}`} className="sb-panel p-3 flex items-center gap-3 hover:border-sb-pink transition">
-                <img src={p.platedImgUrl} alt={p.name} className="w-16 h-16 rounded-xl object-cover" />
+                <img src={p.platedImgUrl} alt={p.name} className="w-16 h-16 rounded-xl object-cover object-top" />
                 <div className="min-w-0">
                   <p className="font-display font-bold text-sm truncate">{p.name}</p>
                   <p className="text-xs text-sb-mute">{p.weightGrams}g · ส่ง {formatBaht(p.wholesalePriceBaht)}</p>

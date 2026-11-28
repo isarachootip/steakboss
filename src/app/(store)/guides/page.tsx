@@ -45,7 +45,7 @@ export default async function GuidesIndexPage() {
                   <img
                     src={g.coverImgUrl}
                     alt={g.title}
-                    className="w-full h-full object-cover group-hover:scale-[1.03] transition duration-300"
+                    className="w-full h-full object-cover object-top group-hover:scale-[1.03] transition duration-300"
                   />
                 </div>
               )}
