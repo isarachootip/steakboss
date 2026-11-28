@@ -154,7 +154,7 @@ export function CheckoutForm() {
           </label>
           <label className={`p-3.5 rounded-xl border cursor-pointer flex gap-3 ${deliveryMethod === "FACTORY_PICKUP" ? "border-sb-pink bg-sb-pink/10" : "border-sb-line"}`}>
             <input type="radio" checked={deliveryMethod === "FACTORY_PICKUP"} onChange={() => setDeliveryMethod("FACTORY_PICKUP")} className="mt-1 accent-sb-pink" />
-            <span className="text-sm"><b>รับเองที่โรงงาน</b><span className="block text-xs text-sb-mute">อ.ป่าโมก จ.อ่างทอง · ฟรี</span></span>
+            <span className="text-sm"><b>รับเองที่หน้าร้าน</b><span className="block text-xs text-sb-mute">ซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กทม. · ฟรี</span></span>
           </label>
         </div>
 

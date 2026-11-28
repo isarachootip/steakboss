@@ -69,8 +69,10 @@ export function LandingInfoSections(props: LandingInfoProps) {
                 </tr>
                 <tr>
                   <td className="py-3">
-                    รับเองที่โรงงาน
-                    <span className="block text-xs text-sb-mute">ต.ป่าโมก อ.ป่าโมก จ.อ่างทอง</span>
+                    รับเองที่หน้าร้าน (ย่านรามอินทรา)
+                    <span className="block text-xs text-sb-mute">
+                      208 ถนนรามอินทรา ซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กรุงเทพมหานคร
+                    </span>
                   </td>
                   <td className="py-3 text-right font-bold">ฟรี</td>
                 </tr>

@@ -104,7 +104,7 @@ export function PaymentPanel(props: PaymentOrderProps) {
           <div className="text-sm">
             <p className="font-bold text-sb-ok">รับคำสั่งซื้อเรียบร้อยแล้ว!</p>
             <p className="text-sb-mute">
-              ทีมงานห้องเย็น จ.อ่างทอง จะจัดแพ็คและแจ้งเลขพัสดุรถเย็นให้คุณทันทีที่ส่งออก
+              ทีมงานจัดส่งย่านรามอินทรา ภายใต้ Brand SteakBoss จะจัดแพ็คและแจ้งเลขพัสดุรถเย็นให้คุณทันทีที่ส่งออก
             </p>
           </div>
         </div>

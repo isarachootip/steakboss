@@ -31,7 +31,7 @@ export default async function AdminCustomersPage() {
         phone: o.customerPhone,
         name: o.customerName,
         email: o.customerEmail,
-        address: o.addressText ? `${o.addressText} ${o.postalCode}` : "รับเองที่โรงงาน",
+        address: o.addressText ? `${o.addressText} ${o.postalCode}` : "รับเองที่หน้าร้าน (รามอินทรา 57)",
         hasLine: Boolean(o.user?.lineUserId),
         orders: live ? 1 : 0,
         spend: live ? o.totalBaht : 0,

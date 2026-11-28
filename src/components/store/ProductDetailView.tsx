@@ -166,7 +166,7 @@ export function ProductDetailView({
             </div>
             <div className="flex items-center gap-2 bg-sb-panel rounded-xl p-3 border border-sb-line">
               <ShieldCheck className="w-4 h-4 text-sb-ok shrink-0" />
-              <span>ผลิตตรงจากโรงงาน อ่างทอง</span>
+              <span>ตัวแทนจัดจำหน่ายและจัดส่ง ย่านรามอินทรา ภายใต้ Brand SteakBoss</span>
             </div>
           </div>
         </div>

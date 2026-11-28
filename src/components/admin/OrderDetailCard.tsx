@@ -87,7 +87,7 @@ export function OrderDetailCard({
           ))}
           <p className="text-xs text-sb-mute pt-2">
             {o.deliveryMethod === "FACTORY_PICKUP"
-              ? "รับเองที่โรงงาน อ.ป่าโมก จ.อ่างทอง"
+              ? "รับเองที่หน้าร้าน (208 ซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กทม.)"
               : `${o.addressText} ${o.postalCode}`}
           </p>
           {o.note && (

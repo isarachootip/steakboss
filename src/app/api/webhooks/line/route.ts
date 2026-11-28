@@ -75,7 +75,7 @@ export async function POST(req: Request) {
 
     if (ev.type === "follow") {
       const welcome =
-        "สวัสดีครับ ยินดีต้อนรับสู่ SteakBoss สเต๊กหมักแช่แข็งต้นตำรับ จ.อ่างทอง 🥩\nเลือกเมนูหรือบริการที่ต้องการจากปุ่มด้านล่างได้เลยครับ 👇";
+        "สวัสดีครับ ยินดีต้อนรับสู่ STEAKBOSS-MAM ตัวแทนจัดจำหน่ายและจัดส่ง ย่านรามอินทรา ภายใต้ Brand SteakBoss 🥩\nเลือกเมนูหรือบริการที่ต้องการจากปุ่มด้านล่างได้เลยครับ 👇";
       if (canReply) {
         await replyLineMessage(ev.replyToken!, [{ type: "text", text: welcome, quickReply }]);
       }

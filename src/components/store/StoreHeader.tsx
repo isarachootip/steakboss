@@ -15,7 +15,7 @@ export function StoreHeader() {
             STEAK<span className="text-sb-pink">BOSS-MAM</span>
           </span>
           <span className="block font-display text-[11px] text-sb-mute mt-0.5">
-            สเต็กบอสส์ต้นตำรับ
+            ตัวแทนจัดจำหน่าย ย่านรามอินทรา
           </span>
         </Link>
 

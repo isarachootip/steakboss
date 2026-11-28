@@ -34,7 +34,7 @@ const BKK_PREFIXES = new Set(["10", "11", "12", "73", "74"]);
 export const ZONE_LABELS: Record<ShippingZone, string> = {
   BKK: "กรุงเทพฯ และปริมณฑล",
   UPC: "ต่างจังหวัด",
-  PICKUP: "รับเองที่โรงงาน (อ่างทอง)",
+  PICKUP: "รับเองที่หน้าร้าน (รามอินทรา 57 กทม.)",
 };
 
 export function resolveShippingZone(postalCode: string): "BKK" | "UPC" | null {

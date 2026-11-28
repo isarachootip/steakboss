@@ -28,8 +28,8 @@ export default async function PrintOrderLabelPage({
         <div className="flex justify-between items-start border-b border-neutral-300 pb-4">
           <div>
             <p className="font-display font-extrabold text-2xl">STEAKBOSS-MAM</p>
-            <p className="text-xs">บจก. สเต็กบอสส์ต้นตำรับ จำกัด</p>
-            <p className="text-xs">548/8 ม.2 ต.ป่าโมก อ.ป่าโมก จ.อ่างทอง 14130</p>
+            <p className="text-xs">ตัวแทนจัดจำหน่ายและจัดส่ง ย่านรามอินทรา ภายใต้ Brand SteakBoss</p>
+            <p className="text-xs">208 ถนนรามอินทรา ซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กรุงเทพมหานคร</p>
           </div>
           <div className="text-right">
             <span className="inline-block border-2 border-black px-2.5 py-1 text-xs font-extrabold">
@@ -47,7 +47,7 @@ export default async function PrintOrderLabelPage({
             <p className="font-semibold">โทร: {order.customerPhone}</p>
             <p className="mt-1">
               {order.deliveryMethod === "FACTORY_PICKUP"
-                ? "รับสินค้าเองที่โรงงาน จ.อ่างทอง"
+                ? "รับสินค้าเองที่หน้าร้าน (ซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กทม.)"
                 : `${order.addressText} ${order.postalCode}`}
             </p>
           </div>

@@ -21,9 +21,9 @@ export function StoreFooter({
             STEAK<span className="text-sb-pink">BOSS-MAM</span>
           </div>
           <p className="text-sm text-sb-mute">
-            ผลิตโดย บริษัท สเต็กบอสส์ต้นตำรับ จำกัด
+            ตัวแทนจัดจำหน่ายและจัดส่ง ย่านรามอินทรา ภายใต้ Brand SteakBoss
             <br />
-            548/8 ม.2 ต.ป่าโมก อ.ป่าโมก จ.อ่างทอง 14130
+            208 ถนนรามอินทรา ซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กรุงเทพมหานคร
           </p>
         </div>
 

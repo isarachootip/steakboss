@@ -64,7 +64,7 @@ async function buildRuleReply(params: {
         return { text: `รหัส ${postcode} อยู่โซน${ZONE_LABELS[z]} ค่าส่งรถเย็น ฿${fee} (ส่งฟรีเมื่อซื้อครบ ${formatBaht(settings.freeShipThreshold)})` };
       }
     }
-    return { text: `ค่าส่งรถเย็น: กทม.และปริมณฑล ฿${settings.bkkShipBaht} · ต่างจังหวัด ฿${settings.upcShipBaht}\nซื้อครบ ${formatBaht(settings.freeShipThreshold)} ส่งฟรี · รับเองที่โรงงานอ่างทองฟรีครับ` };
+    return { text: `ค่าส่งรถเย็น: กทม.และปริมณฑล ฿${settings.bkkShipBaht} · ต่างจังหวัด ฿${settings.upcShipBaht}\nซื้อครบ ${formatBaht(settings.freeShipThreshold)} ส่งฟรี · รับเองที่หน้าร้านซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กทม. ฟรีครับ` };
   }
 
   const guides = await listPublishedGuides();
@@ -95,7 +95,7 @@ async function buildRuleReply(params: {
   if (catalogReply) return { text: catalogReply };
 
   const topSamples = products.slice(0, 12).map((p) => `${p.name} ปลีก฿${p.priceBaht}/ส่ง฿${p.wholesalePriceBaht}`).join(", ");
-  const sysPrompt = `คุณคือ "บอสบอท" ผู้ช่วยร้าน Steakboss (สเต๊กหมักแช่แข็ง -18°C จ.อ่างทอง) ตอบภาษาไทยสุภาพ ลงท้ายครับ สั้นไม่เกิน 5 บรรทัด
+  const sysPrompt = `คุณคือ "บอสบอท" ผู้ช่วยร้าน STEAKBOSS-MAM ตัวแทนจัดจำหน่ายและจัดส่ง ย่านรามอินทรา ภายใต้ Brand SteakBoss (208 ถนนรามอินทรา ซอยรามอินทรา 57 แยก 8 ท่าแร้ง บางเขน กรุงเทพมหานคร) ตอบภาษาไทยสุภาพ ลงท้ายครับ สั้นไม่เกิน 5 บรรทัด
 สั่งคละครบ ${settings.wholesaleMinPacks} แพ็คได้ราคาส่งอัตโนมัติ ตัวอย่างสินค้า: ${topSamples}
 ค่าส่งรถเย็น: กทม. ฿${settings.bkkShipBaht}, ตจว. ฿${settings.upcShipBaht}, ส่งฟรีเมื่อครบ ฿${settings.freeShipThreshold}`;
   const aiText = await generateBossBotAiReply(sysPrompt, text);

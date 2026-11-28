@@ -32,7 +32,7 @@ export async function buildLineMenuFlexIfMatched(
 
   if (GREETING_REGEX.test(clean)) {
     const replyText =
-      "สวัสดีครับ ยินดีต้อนรับสู่ SteakBoss สเต๊กหมักแช่แข็งต้นตำรับ จ.อ่างทอง 🥩\nเลือกเมนูหรือบริการที่ต้องการจากปุ่มด้านล่างได้เลยครับ 👇";
+      "สวัสดีครับ ยินดีต้อนรับสู่ STEAKBOSS-MAM ตัวแทนจัดจำหน่ายและจัดส่ง ย่านรามอินทรา ภายใต้ Brand SteakBoss 🥩\nเลือกเมนูหรือบริการที่ต้องการจากปุ่มด้านล่างได้เลยครับ 👇";
     return {
       text: replyText,
       flexMessages: [{ type: "text", text: replyText, quickReply }],
