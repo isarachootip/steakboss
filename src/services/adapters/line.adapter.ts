@@ -7,6 +7,7 @@ import {
 } from "@/schemas/line.schema";
 import {
   buildOrderFlexMessage,
+  buildPromptPayOrderFlexMessage,
   type LineFlexBubble,
   type LineMessagePayload,
   type LineTextMessage,
@@ -14,6 +15,7 @@ import {
 
 export {
   buildOrderFlexMessage,
+  buildPromptPayOrderFlexMessage,
   type LineFlexBubble,
   type LineMessagePayload,
   type LineTextMessage,
@@ -157,6 +159,33 @@ export async function getLineUserProfile(
     if (!res.ok) return null;
     const parsed = lineUserProfileSchema.safeParse(await res.json());
     return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function downloadLineMessageContent(
+  messageId: string,
+  options?: LineClientOptions
+): Promise<{ buffer: Buffer; contentType: string } | null> {
+  const token = resolveEffectiveToken(options);
+  if (!token || !messageId) {
+    return null;
+  }
+  const fetchImpl = options?.fetchFn ?? fetch;
+  try {
+    const res = await fetchImpl(
+      `https://api-data.line.me/v2/bot/message/${encodeURIComponent(messageId)}/content`,
+      {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}` },
+        cache: "no-store",
+      }
+    );
+    if (!res.ok) return null;
+    const arrayBuffer = await res.arrayBuffer();
+    const contentType = res.headers.get("content-type") || "image/jpeg";
+    return { buffer: Buffer.from(arrayBuffer), contentType };
   } catch {
     return null;
   }

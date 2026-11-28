@@ -3,6 +3,8 @@ import { normalizePhone } from "@/domain/order";
 import type { UpdateCustomerProfileInput } from "@/schemas/profile.schema";
 import { saveDefaultCustomerAddressInTx } from "./customer-address.service";
 
+export { verifyLineLiffIdToken } from "./line-liff-auth.service";
+
 export interface LineProfile {
   userId: string;
   displayName: string;

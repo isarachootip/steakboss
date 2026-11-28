@@ -77,13 +77,17 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
     setError(null);
     setSubmitting(true);
     try {
+      const orderChannel =
+        typeof window !== "undefined" && localStorage.getItem("sb_order_channel") === "LINE"
+          ? "LINE"
+          : "WEB";
       const res = await fetch("/api/store/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
           customerName: name, customerPhone: phone, customerEmail: email,
-          deliveryMethod, addressText, postalCode, paymentMethod, couponCode, note, channel: "WEB",
+          deliveryMethod, addressText, postalCode, paymentMethod, couponCode, note, channel: orderChannel,
         }),
       });
       const data = (await res.json()) as { order?: { orderNo: string }; error?: string };

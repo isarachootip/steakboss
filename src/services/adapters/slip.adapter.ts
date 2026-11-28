@@ -4,6 +4,7 @@ import {
   isSlipReceiverMatched,
   type SlipReceiverObserved,
 } from "@/domain/slip-verifier";
+import { verifySlipWithGeminiVision } from "./gemini-slip.adapter";
 
 export interface SlipVerifyInput {
   slipBase64: string;
@@ -40,6 +41,10 @@ function decodeBase64ToBlob(dataUrl: string): { blob: Blob; filename: string } {
   return { blob: new Blob([bytes], { type: mime }), filename: `slip.${ext}` };
 }
 
+function strVal(v: unknown): string | null {
+  return typeof v === "string" && v.trim() ? v.trim() : null;
+}
+
 function extractParsedSlip(payload: Record<string, unknown>): ParsedExternalSlip | null {
   const data = (payload.data as Record<string, unknown> | undefined) ?? payload;
   if (!data || typeof data !== "object") return null;
@@ -51,43 +56,22 @@ function extractParsedSlip(payload: Record<string, unknown>): ParsedExternalSlip
       : typeof rawAmount === "object" && rawAmount !== null && typeof (rawAmount as Record<string, unknown>).amount === "number"
         ? ((rawAmount as Record<string, unknown>).amount as number)
         : undefined;
-
-  const transRef =
-    typeof data.transRef === "string" && data.transRef.trim() ? data.transRef.trim() : null;
-
+  const transRef = strVal(data.transRef);
   const rec = (data.receiver as Record<string, unknown> | undefined) ?? {};
-  const recAccount = (rec.account as Record<string, unknown> | undefined) ?? {};
-  const proxyObj = (recAccount.proxy as Record<string, unknown> | undefined) ?? (rec.proxy as Record<string, unknown> | undefined) ?? {};
-  const bankAccObj = (recAccount.bank as Record<string, unknown> | undefined) ?? {};
-  const nameObj = (recAccount.name as Record<string, unknown> | undefined) ?? {};
+  const acc = (rec.account as Record<string, unknown> | undefined) ?? {};
+  const proxy = (acc.proxy as Record<string, unknown> | undefined) ?? (rec.proxy as Record<string, unknown> | undefined) ?? {};
+  const bank = (acc.bank as Record<string, unknown> | undefined) ?? {};
+  const nameObj = (acc.name as Record<string, unknown> | undefined) ?? {};
 
-  const proxyValue =
-    typeof proxyObj.account === "string"
-      ? proxyObj.account
-      : typeof proxyObj.value === "string"
-        ? proxyObj.value
-        : null;
-  const accountValue =
-    typeof bankAccObj.account === "string"
-      ? bankAccObj.account
-      : typeof recAccount.value === "string"
-        ? recAccount.value
-        : null;
-  const displayName =
-    typeof rec.displayName === "string"
-      ? rec.displayName
-      : typeof nameObj.th === "string"
-        ? nameObj.th
-        : null;
-  const name =
-    typeof rec.name === "string"
-      ? rec.name
-      : typeof nameObj.en === "string"
-        ? nameObj.en
-        : null;
+  const receiver: SlipReceiverObserved = {
+    proxyValue: strVal(proxy.account) ?? strVal(proxy.value),
+    accountValue: strVal(bank.account) ?? strVal(acc.value),
+    displayName: strVal(rec.displayName) ?? strVal(nameObj.th),
+    name: strVal(rec.name) ?? strVal(nameObj.en),
+  };
 
   if (amount === undefined && !transRef) return null;
-  return { transRef, amount, receiver: { proxyValue, accountValue, displayName, name } };
+  return { transRef, amount, receiver };
 }
 
 export async function verifySlipWithAdapter(
@@ -97,6 +81,10 @@ export async function verifySlipWithAdapter(
   const provider = (process.env.SLIP_VERIFY_PROVIDER || "manual").trim().toLowerCase();
   const apiUrl = process.env.SLIP_VERIFY_API_URL?.trim();
   const apiKey = process.env.SLIP_VERIFY_API_KEY?.trim();
+
+  if (provider === "gemini") {
+    return verifySlipWithGeminiVision(input, slipHash);
+  }
 
   if (!apiUrl || !apiKey || provider === "manual" || provider === "sandbox") {
     return {
