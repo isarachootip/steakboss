@@ -13,8 +13,22 @@ export interface SessionPayload {
 const COOKIE_NAME = "sb_session";
 const TTL_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
+let warnedWeakSecret = false;
+
 function getSecret(): string {
-  return process.env.SESSION_SECRET || "steakboss-dev-session-secret-fallback";
+  const secret = process.env.SESSION_SECRET?.trim() || "";
+  const isWeak =
+    secret.length < 32 ||
+    secret.includes("change-this") ||
+    secret.includes("dev-session-secret");
+
+  if (process.env.NODE_ENV === "production" && isWeak && !warnedWeakSecret) {
+    warnedWeakSecret = true;
+    console.error(
+      "[SECURITY CRITICAL] SESSION_SECRET is missing or using a default placeholder. Set a random 64-char SESSION_SECRET in Coolify immediately!"
+    );
+  }
+  return secret || "steakboss-dev-session-secret-fallback";
 }
 
 function sign(data: string): string {

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { submitSlipSchema } from "@/schemas/order.schema";
 import { submitOrderSlip } from "@/services/payment.service";
 
@@ -6,9 +7,21 @@ export async function POST(
   req: Request,
   context: { params: Promise<{ orderNo: string }> }
 ) {
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`slip:${ip}`, {
+    limit: 12,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `ส่งสลิปบ่อยเกินไป กรุณารออีก ${rl.retryAfterSec} วินาที` },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+    );
+  }
+
   try {
     const { orderNo } = await context.params;
-    const body = await req.json();
+    const body: unknown = await req.json();
     const parsed = submitSlipSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(

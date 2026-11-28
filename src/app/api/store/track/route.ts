@@ -1,9 +1,22 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 import { trackQuerySchema } from "@/schemas/order.schema";
 import { lookupOrderForTracking } from "@/services/order.service";
 
 export async function POST(req: Request) {
-  const body = await req.json();
+  const ip = getClientIp(req);
+  const rl = checkRateLimit(`track:${ip}`, {
+    limit: 20,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `ค้นหาพัสดุบ่อยเกินไป กรุณารออีก ${rl.retryAfterSec} วินาที` },
+      { status: 429, headers: { "Retry-After": String(rl.retryAfterSec) } }
+    );
+  }
+
+  const body: unknown = await req.json();
   const parsed = trackQuerySchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
