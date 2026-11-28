@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Package,
+  ClipboardList,
   BookOpen,
   ShoppingCart,
   Users,
@@ -26,6 +27,7 @@ interface NavItem {
 const NAV_ITEMS: readonly NavItem[] = [
   { href: "/admin", label: "ภาพรวม", icon: LayoutDashboard },
   { href: "/admin/products", label: "สินค้า & สต็อก", icon: Package },
+  { href: "/admin/purchase-orders", label: "สั่งซื้อ & รับเข้า (PO)", icon: ClipboardList },
   {
     href: "/admin/content",
     label: "เนื้อหา & วิธีปรุง",

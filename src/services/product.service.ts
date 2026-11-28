@@ -94,10 +94,16 @@ export async function updateProduct(
 export async function adjustProductStock(params: {
   productId: string;
   deltaQty: number;
-  type: "RESTOCK" | "ADJUST";
+  type: "ADJUST";
   reason: string;
   actorId: string;
 }) {
+  if (params.type !== "ADJUST" || params.deltaQty >= 0) {
+    throw new Error(
+      "การรับสินค้าเข้าคลังต้องดำเนินการผ่านใบสั่งซื้อ (PO) เท่านั้น ปุ่มนี้ใช้สำหรับปรับลดสต็อก/ตัดของเสีย"
+    );
+  }
+
   return db.$transaction(async (tx) => {
     const prod = await tx.product.findUnique({ where: { id: params.productId } });
     if (!prod) throw new Error("ไม่พบสินค้านี้");
@@ -130,6 +136,7 @@ export async function deleteProduct(id: string): Promise<void> {
         select: {
           orderItems: true,
           includedInBundles: true,
+          purchaseOrderItems: true,
         },
       },
     },
@@ -140,6 +147,11 @@ export async function deleteProduct(id: string): Promise<void> {
   if (existing._count.orderItems > 0) {
     throw new Error(
       "ไม่สามารถลบสินค้านี้ได้เนื่องจากมีประวัติการสั่งซื้อแล้ว กรุณาปิดการขายแทน"
+    );
+  }
+  if (existing._count.purchaseOrderItems > 0) {
+    throw new Error(
+      "ไม่สามารถลบสินค้านี้ได้เนื่องจากมีประวัติใบสั่งซื้อ (PO) แล้ว กรุณาปิดการขายแทน"
     );
   }
   if (existing._count.includedInBundles > 0) {

@@ -31,29 +31,36 @@ describe("product_backend service", () => {
     expect(kp?.costBaht).toBe(39);
   });
 
-  it("adjusts stock and records StockMovement cleanly", async () => {
+  it("blocks manual restock without PO and allows negative damage adjustment cleanly", async () => {
     const kp = await db.product.findUniqueOrThrow({ where: { slug: "pork-chop-kp" } });
     const before = kp.stockQty;
 
-    await adjustProductStock({
-      productId: kp.id,
-      deltaQty: 5,
-      type: "RESTOCK",
-      reason: "test restock",
-      actorId: "test-actor",
-    });
-    const afterUp = await db.product.findUniqueOrThrow({ where: { id: kp.id } });
-    expect(afterUp.stockQty).toBe(before + 5);
+    await expect(
+      adjustProductStock({
+        productId: kp.id,
+        deltaQty: 5,
+        type: "ADJUST",
+        reason: "manual add attempt",
+        actorId: "test-actor",
+      })
+    ).rejects.toThrow(/PO/);
 
-    await adjustProductStock({
-      productId: kp.id,
-      deltaQty: -5,
-      type: "ADJUST",
-      reason: "test cleanup",
-      actorId: "test-actor",
-    });
-    const afterRestore = await db.product.findUniqueOrThrow({ where: { id: kp.id } });
-    expect(afterRestore.stockQty).toBe(before);
+    try {
+      await adjustProductStock({
+        productId: kp.id,
+        deltaQty: -3,
+        type: "ADJUST",
+        reason: "test damage write-off",
+        actorId: "test-actor",
+      });
+      const afterDown = await db.product.findUniqueOrThrow({ where: { id: kp.id } });
+      expect(afterDown.stockQty).toBe(before - 3);
+    } finally {
+      await db.product.update({ where: { id: kp.id }, data: { stockQty: before } });
+      await db.stockMovement.deleteMany({
+        where: { productId: kp.id, actorId: "test-actor" },
+      });
+    }
   });
 
   it("creates, updates images, deletes unused products, and blocks deleting bundle child SKUs", async () => {

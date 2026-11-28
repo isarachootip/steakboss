@@ -1,6 +1,6 @@
 "use client";
 
-import { PackagePlus, Pencil, Trash2 } from "lucide-react";
+import { PackageMinus, Pencil, Trash2 } from "lucide-react";
 import type { EnrichedProduct } from "@/services/product.service";
 import { formatBaht } from "@/lib/format";
 
@@ -26,6 +26,7 @@ export function ProductsTable({
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-sb-line text-sb-mute font-display">
+            <th className="text-left py-2.5 pr-3">SKU</th>
             <th className="text-left py-2.5">สินค้า</th>
             <th className="text-right py-2.5">ปลีกแช่แข็ง</th>
             <th className="text-right py-2.5">ราคาส่ง</th>
@@ -39,6 +40,11 @@ export function ProductsTable({
         <tbody className="divide-y divide-sb-line">
           {products.map((p) => (
             <tr key={p.id}>
+              <td className="py-3 pr-3 align-middle">
+                <span className="inline-block font-mono text-xs px-2 py-0.5 rounded-md bg-sb-panel2 border border-sb-line text-sb-pink2 whitespace-nowrap">
+                  {p.sku}
+                </span>
+              </td>
               <td className="py-3 pr-3">
                 <div className="flex items-center gap-3">
                   <img
@@ -49,7 +55,7 @@ export function ProductsTable({
                   <div>
                     <p className="font-bold">{p.name}</p>
                     <p className="text-xs text-sb-mute">
-                      {p.sku} · {p.categoryName} · {p.weightGrams}g
+                      {p.categoryName} · {p.weightGrams}g
                       {p.packSize > 1 ? ` (${p.packSize} ชิ้น/แพ็ค)` : ""}
                       {p.isBundle ? " · BUNDLE" : ""}
                     </p>
@@ -100,8 +106,9 @@ export function ProductsTable({
                       type="button"
                       onClick={() => onAdjustStock(p)}
                       className="sb-btn-dark text-xs px-2.5"
+                      title="ปรับลดสต็อก (ของเสีย/ชำรุด/ตรวจนับ)"
                     >
-                      <PackagePlus className="w-3.5 h-3.5" /> สต็อก
+                      <PackageMinus className="w-3.5 h-3.5" /> ปรับลดสต็อก
                     </button>
                   )}
                   {canEdit && (

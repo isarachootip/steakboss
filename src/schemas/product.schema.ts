@@ -77,8 +77,18 @@ export const importPriceSheetCsvSchema = z.object({
 });
 
 export const adjustStockSchema = z.object({
-  deltaQty: z.number().int().refine((n) => n !== 0, "จำนวนต้องไม่เป็น 0"),
-  type: z.enum(["RESTOCK", "ADJUST"]),
+  deltaQty: z
+    .number()
+    .int()
+    .max(
+      -1,
+      "การปรับสต็อกด้วยมือรองรับเฉพาะการปรับลด (-) การรับสินค้าเข้าต้องทำผ่านใบสั่งซื้อ (PO)"
+    ),
+  type: z.literal("ADJUST", {
+    errorMap: () => ({
+      message: "การรับสินค้าเข้า (RESTOCK) ต้องทำผ่านใบสั่งซื้อ (PO)",
+    }),
+  }),
   reason: z.string().trim().min(1, "กรุณาระบุเหตุผล").max(200),
 });
 

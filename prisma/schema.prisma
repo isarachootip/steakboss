@@ -75,6 +75,8 @@ model Product {
   includedInBundles  BundleItem[]    @relation("BundleChild")
   stockMovements     StockMovement[]
   orderItems         OrderItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  goodsReceiptItems  GoodsReceiptItem[]
 }
 
 model BundleItem {
@@ -89,17 +91,89 @@ model BundleItem {
 }
 
 model StockMovement {
-  id        String   @id @default(cuid())
-  productId String
-  deltaQty  Int
-  type      String   // RESTOCK | RESERVE | DEDUCT | RELEASE | ADJUST
-  reason    String   @default("")
-  orderNo   String?
-  actorId   String?
-  createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id              String   @id @default(cuid())
+  productId       String
+  deltaQty        Int
+  type            String   // RESTOCK | RESERVE | DEDUCT | RELEASE | ADJUST
+  reason          String   @default("")
+  orderNo         String?
+  purchaseOrderNo String?
+  goodsReceiptNo  String?
+  actorId         String?
+  createdAt       DateTime @default(now())
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId, createdAt])
+}
+
+model PurchaseOrder {
+  id            String              @id @default(cuid())
+  poNo          String              @unique
+  supplierName  String              @default("โรงงานอ่างทอง")
+  status        String              @default("OPEN") // OPEN | PARTIAL | RECEIVED | SHORT_CLOSED | CANCELLED
+  expectedDate  DateTime
+  note          String              @default("")
+  totalCostBaht Float               @default(0)
+  createdById   String
+  closedAt      DateTime?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  items         PurchaseOrderItem[]
+  receipts      GoodsReceipt[]
+
+  @@index([status, expectedDate])
+  @@index([createdAt])
+}
+
+model PurchaseOrderItem {
+  id                  String             @id @default(cuid())
+  purchaseOrderId     String
+  productId           String
+  skuSnapshot         String
+  productNameSnapshot String
+  orderedQty          Int
+  receivedQty         Int                @default(0)
+  unitCostBaht        Float              @default(0)
+  lineTotalBaht       Float              @default(0)
+  purchaseOrder       PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product             Product            @relation(fields: [productId], references: [id])
+  receiptItems        GoodsReceiptItem[]
+
+  @@unique([purchaseOrderId, productId])
+  @@index([productId])
+}
+
+model GoodsReceipt {
+  id              String             @id @default(cuid())
+  receiptNo       String             @unique
+  purchaseOrderId String
+  deliveryNoteNo  String             @default("")
+  note            String             @default("")
+  status          String             @default("POSTED") // POSTED | VOIDED
+  receivedById    String
+  voidedById      String?
+  voidReason      String?
+  voidedAt        DateTime?
+  receivedAt      DateTime           @default(now())
+  purchaseOrder   PurchaseOrder      @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  items           GoodsReceiptItem[]
+
+  @@index([purchaseOrderId, receivedAt])
+}
+
+model GoodsReceiptItem {
+  id                  String            @id @default(cuid())
+  goodsReceiptId      String
+  purchaseOrderItemId String
+  productId           String
+  skuSnapshot         String
+  receivedQty         Int
+  unitCostBaht        Float             @default(0)
+  goodsReceipt        GoodsReceipt      @relation(fields: [goodsReceiptId], references: [id], onDelete: Cascade)
+  purchaseOrderItem   PurchaseOrderItem @relation(fields: [purchaseOrderItemId], references: [id], onDelete: Cascade)
+  product             Product           @relation(fields: [productId], references: [id])
+
+  @@index([productId])
 }
 
 model Coupon {
