@@ -13,7 +13,7 @@ services:
       - DATABASE_URL=${DATABASE_URL:-file:/app/data/steakboss.db}
       - SESSION_SECRET=${SESSION_SECRET:-change-this-steakboss-session-secret-32chars}
       - CRON_SECRET=${CRON_SECRET:-change-this-cron-secret}
-      - NEXT_PUBLIC_APP_URL=${SERVICE_URL_WEB_3000:-http://localhost:3000}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://steakboss.odmfood.online}
       - LINE_CHANNEL_ID=${LINE_CHANNEL_ID:-}
       - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET:-}
       - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN:-}
