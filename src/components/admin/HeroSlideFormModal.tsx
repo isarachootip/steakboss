@@ -137,6 +137,7 @@ export function HeroSlideFormModal({
             label="รูปแบนเนอร์หลัก (แนะนำแนวนอน 16:9 ความละเอียดสูง)"
             value={form.imageUrl}
             onChange={(url) => setForm({ ...form, imageUrl: url })}
+            preset="banner"
           />
 
           {form.mode === "IMAGE_BANNER" ? (

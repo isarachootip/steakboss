@@ -22,7 +22,7 @@ function resolveReadyMealImage(cleanName: string): ProductImageSet {
   if (cleanName.includes("สลัด")) {
     return { platedImgUrl: P("rm-salad-dressing.jpg"), packImgUrl, wideImgUrl: null };
   }
-  if (cleanName.includes("เส้นสปาเก็ตตี้")) {
+  if (cleanName.includes("เส้นสปาเก็ตตี้") || cleanName.includes("เส้นสปาเกตตี")) {
     return { platedImgUrl: P("rm-spaghetti-plain.jpg"), packImgUrl, wideImgUrl: null };
   }
   if (cleanName.includes("คาโบนาร่า") && cleanName.includes("ไส้กรอก")) {

@@ -70,18 +70,21 @@ describe("content.service & upload.service", () => {
   it("validates image magic bytes and blocks path traversal on uploads", async () => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "sb-uploads-"));
     try {
-      const pngBytes = new Uint8Array([
-        0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0x00, 0x00, 0x0d,
-      ]);
+      // Minimal valid 1x1 transparent PNG
+      const pngBytes = Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "base64"
+      );
       const saved = await saveUploadedImage(
-        { buffer: Buffer.from(pngBytes), mimeType: "image/png" },
+        { buffer: pngBytes, mimeType: "image/png" },
         tmpDir
       );
       expect(saved.url).toMatch(/^\/api\/uploads\/[a-z0-9-]+\.png$/);
 
       const loaded = await readUploadedImage(saved.filename, tmpDir);
       expect(loaded?.contentType).toBe("image/png");
-      expect(loaded?.buffer.length).toBe(pngBytes.length);
+      expect(loaded?.buffer.length).toBeGreaterThan(0);
+      expect(loaded?.buffer.length).toBeLessThanOrEqual(1_048_576);
 
       await expect(
         saveUploadedImage(

@@ -36,6 +36,9 @@ describe("product image mapping coverage & accuracy", () => {
       expect(p.packImgUrl).toBe("/images/products/ready-meal-pack.jpg");
     }
 
+    const plainSpag = products.find((p) => p.name.includes("ต้มสุก"));
+    expect(plainSpag?.platedImgUrl).toBe("/images/products/rm-spaghetti-plain.jpg");
+
     const duck = products.find((p) => p.name.includes("เป็ด"));
     expect(duck?.platedImgUrl).toBe("/images/products/beef-duck-breast.jpg");
 

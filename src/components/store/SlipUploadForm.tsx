@@ -1,7 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Upload } from "lucide-react";
+import { Loader2, Upload } from "lucide-react";
+import {
+  formatFileSize,
+  resizeSlipImageToDataUrl,
+} from "@/lib/client-image-resize";
 
 export function SlipUploadForm({
   orderNo,
@@ -11,18 +15,31 @@ export function SlipUploadForm({
   onStatusChange: (status: string) => void;
 }) {
   const [slipBase64, setSlipBase64] = useState<string | null>(null);
+  const [sizeInfo, setSizeInfo] = useState<string | null>(null);
+  const [resizing, setResizing] = useState(false);
   const [transRef, setTransRef] = useState("");
   const [autoVerifyDemo, setAutoVerifyDemo] = useState(true);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  function handleFile(file: File | undefined) {
+  async function handleFile(file: File | undefined) {
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") setSlipBase64(reader.result);
-    };
-    reader.readAsDataURL(file);
+    setResizing(true);
+    setFeedback(null);
+    setSizeInfo(null);
+    try {
+      const resized = await resizeSlipImageToDataUrl(file);
+      setSlipBase64(resized.dataUrl);
+      setSizeInfo(
+        resized.originalBytes > resized.resizedBytes
+          ? `ย่อรูปสลิปแล้ว ${formatFileSize(resized.resizedBytes)} (จาก ${formatFileSize(resized.originalBytes)})`
+          : `ขนาดไฟล์สลิป ${formatFileSize(resized.resizedBytes)}`
+      );
+    } catch {
+      setFeedback({ ok: false, msg: "ไม่สามารถอ่านหรือย่อไฟล์รูปสลิปนี้ได้" });
+    } finally {
+      setResizing(false);
+    }
   }
 
   async function submitSlip(e: React.FormEvent) {
@@ -64,11 +81,25 @@ export function SlipUploadForm({
     <form onSubmit={submitSlip} className="sb-panel space-y-4">
       <h2 className="font-display font-bold text-xl">แนบสลิปการโอนเงิน</h2>
       <label className="block border-2 border-dashed border-sb-line rounded-2xl p-5 text-center cursor-pointer hover:border-sb-pink transition">
-        <input type="file" accept="image/*" onChange={(e) => handleFile(e.target.files?.[0])} className="hidden" />
-        <Upload className="w-7 h-7 mx-auto text-sb-pink mb-2" />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleFile(e.target.files?.[0])}
+          className="hidden"
+        />
+        {resizing ? (
+          <Loader2 className="w-7 h-7 mx-auto text-sb-pink mb-2 animate-spin" />
+        ) : (
+          <Upload className="w-7 h-7 mx-auto text-sb-pink mb-2" />
+        )}
         <span className="text-sm font-semibold block">
-          {slipBase64 ? "เลือกรูปสลิปแล้ว (คลิกเพื่อเปลี่ยน)" : "แตะเพื่อเลือกรูปสลิป"}
+          {resizing
+            ? "กำลังย่อรูปสลิป..."
+            : slipBase64
+              ? "เลือกรูปสลิปแล้ว (คลิกเพื่อเปลี่ยน)"
+              : "แตะเพื่อเลือกรูปสลิป"}
         </span>
+        {sizeInfo && <span className="text-xs text-sb-ok block mt-1">{sizeInfo}</span>}
         {slipBase64 && (
           <img src={slipBase64} alt="ตัวอย่างสลิป" className="mt-3 max-h-40 mx-auto rounded-lg" />
         )}
@@ -76,21 +107,35 @@ export function SlipUploadForm({
 
       <label className="block space-y-1 text-xs font-semibold">
         <span>เลขอ้างอิงสลิป (ไม่บังคับ)</span>
-        <input value={transRef} onChange={(e) => setTransRef(e.target.value)} placeholder="เช่น 20261121XXXXXX" className="sb-input min-h-[40px] text-sm" />
+        <input
+          value={transRef}
+          onChange={(e) => setTransRef(e.target.value)}
+          placeholder="เช่น 20261121XXXXXX"
+          className="sb-input min-h-[40px] text-sm"
+        />
       </label>
 
       <label className="flex items-center gap-2 text-xs text-sb-mute">
-        <input type="checkbox" checked={autoVerifyDemo} onChange={(e) => setAutoVerifyDemo(e.target.checked)} className="accent-sb-pink" />
+        <input
+          type="checkbox"
+          checked={autoVerifyDemo}
+          onChange={(e) => setAutoVerifyDemo(e.target.checked)}
+          className="accent-sb-pink"
+        />
         <span>โหมด Sandbox: จำลองตรวจสลิปผ่านอัตโนมัติทันที</span>
       </label>
 
       {feedback && (
-        <p className={`text-sm rounded-xl p-3 ${feedback.ok ? "bg-emerald-950 text-emerald-200" : "bg-red-950 text-red-200"}`}>
+        <p
+          className={`text-sm rounded-xl p-3 ${
+            feedback.ok ? "bg-emerald-950 text-emerald-200" : "bg-red-950 text-red-200"
+          }`}
+        >
           {feedback.msg}
         </p>
       )}
 
-      <button type="submit" disabled={!slipBase64 || busy} className="sb-btn w-full">
+      <button type="submit" disabled={!slipBase64 || busy || resizing} className="sb-btn w-full">
         {busy ? "กำลังตรวจสอบสลิป..." : "ยืนยันการส่งสลิป"}
       </button>
     </form>

@@ -99,6 +99,7 @@ export function EventPopupEditor({
           label="รูปภาพอีเวนต์ / โปรโมชัน (แนะนำสัดส่วน 1:1 หรือ 4:5)"
           value={form.imageUrl}
           onChange={(url) => setForm({ ...form, imageUrl: url })}
+          preset="banner"
         />
 
         <label className="block text-sm">

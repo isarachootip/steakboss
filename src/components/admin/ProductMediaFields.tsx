@@ -40,6 +40,7 @@ export function ProductMediaFields({
         value={value.wideImgUrl}
         onChange={(url) => onChange({ wideImgUrl: url })}
         placeholder="เว้นว่างได้ หรืออัปโหลดรูปแนวนอน"
+        preset="banner"
         compact
       />
 
