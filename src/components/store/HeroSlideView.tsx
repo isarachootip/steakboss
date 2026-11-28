@@ -17,7 +17,7 @@ export function HeroSlideView({
 }) {
   if (slide.mode === "IMAGE_BANNER") {
     const content = (
-      <div className="relative w-full min-h-[56vh] sm:min-h-[72vh] flex items-center justify-center overflow-hidden bg-[#0d0b0a]">
+      <div className="relative w-full h-full min-h-[60vh] sm:min-h-[72vh] flex items-center justify-center overflow-hidden bg-[#0d0b0a]">
         <img
           src={slide.imageUrl}
           alt={slide.title}
@@ -34,7 +34,7 @@ export function HeroSlideView({
           target="_blank"
           rel="noopener noreferrer"
           aria-label={slide.title}
-          className="block w-full focus:outline-none"
+          className="block w-full h-full focus:outline-none"
         >
           {content}
         </a>
@@ -44,7 +44,7 @@ export function HeroSlideView({
       <Link
         href={slide.linkHref}
         aria-label={slide.title}
-        className="block w-full focus:outline-none"
+        className="block w-full h-full focus:outline-none"
       >
         {content}
       </Link>
@@ -54,7 +54,7 @@ export function HeroSlideView({
   const headlineLines = slide.headline.split(/\r?\n/).filter(Boolean);
 
   return (
-    <div className="relative min-h-[72vh] flex items-end overflow-hidden bg-[#0d0b0a]">
+    <div className="relative h-full min-h-[60vh] sm:min-h-[72vh] flex items-end overflow-hidden bg-[#0d0b0a]">
       <img
         src={slide.imageUrl}
         alt={slide.title}
