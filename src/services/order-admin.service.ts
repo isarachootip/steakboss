@@ -100,13 +100,28 @@ export async function updateOrderByAdmin(
   input: z.infer<typeof adminUpdateOrderSchema>,
   actorId: string
 ) {
-  const existing = await db.order.findUnique({ where: { orderNo } });
+  const existing = await db.order.findUnique({
+    where: { orderNo },
+    include: { payments: { select: { id: true, status: true } } },
+  });
   if (!existing) throw new Error("ไม่พบคำสั่งซื้อนี้");
 
   const currentStatus = existing.status as OrderStatus;
   if (!canTransitionOrder(currentStatus, input.status)) {
     throw new Error(
       `ไม่สามารถเปลี่ยนสถานะจาก ${ORDER_STATUS_LABELS[currentStatus]} เป็น ${ORDER_STATUS_LABELS[input.status]} ได้`
+    );
+  }
+
+  const hasVerifiedSlip = existing.payments.some((p) => p.status === "VERIFIED");
+  if (
+    existing.paymentMethod === "PROMPTPAY" &&
+    input.status === "PAID" &&
+    currentStatus !== "PAID" &&
+    !hasVerifiedSlip
+  ) {
+    throw new Error(
+      "ไม่สามารถเปลี่ยนสถานะเป็นชำระเงินแล้วได้ ต้องมีสลิปแนบและกดอนุมัติสลิปผ่านการตรวจสอบก่อน"
     );
   }
 

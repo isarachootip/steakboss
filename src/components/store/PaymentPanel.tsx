@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, Copy } from "lucide-react";
+import { CheckCircle2, Clock, Copy } from "lucide-react";
 import { formatBaht, STATUS_BADGE_STYLE } from "@/lib/format";
 import { ORDER_STATUS_LABELS, isOrderStatus } from "@/domain/order";
 import { SlipUploadForm } from "./SlipUploadForm";
@@ -52,22 +52,49 @@ export function PaymentPanel(props: PaymentOrderProps) {
       </div>
 
       {props.paymentMethod === "PROMPTPAY" && !isPaidOrCod && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="sb-panel text-center space-y-3">
-            <h2 className="font-display font-bold text-xl">สแกน QR พร้อมเพย์</h2>
-            <p className="text-xs text-sb-mute">
-              ยอดเงิน {formatBaht(props.totalBaht)} ถูกฝังใน QR Code แล้ว
-            </p>
-            {props.qrDataUrl && (
-              <div className="bg-white p-3 rounded-2xl inline-block">
-                <img src={props.qrDataUrl} alt="PromptPay QR" className="w-56 h-56" />
-              </div>
-            )}
-            <p className="text-sm font-semibold">{props.promptpayName}</p>
-            <p className="text-xs text-sb-mute">พร้อมเพย์: {props.promptpayId}</p>
+        <div className="space-y-4">
+          <div className="sb-panel bg-amber-950/30 border-amber-700/50 flex items-center gap-3">
+            <Clock className="w-6 h-6 text-amber-300 shrink-0" />
+            <div className="text-sm">
+              {status === "SLIP_SUBMITTED" ? (
+                <>
+                  <p className="font-bold text-amber-200">
+                    ได้รับสลิปแล้ว — อยู่ระหว่างตรวจสอบสลิป
+                  </p>
+                  <p className="text-sb-mute">
+                    ระบบจะยืนยันคำสั่งซื้อและตัดสต็อกให้ทันทีที่ตรวจสอบสลิปผ่านครับ
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="font-bold text-amber-200">
+                    รอชำระเงิน — คำสั่งซื้อนี้ยังไม่ได้รับการยืนยัน
+                  </p>
+                  <p className="text-sb-mute">
+                    กรุณาสแกน QR พร้อมเพย์ด้านล่าง และแนบสลิป (หรือส่งสลิปในแชท LINE) เพื่อตรวจสอบก่อนยืนยันออเดอร์
+                  </p>
+                </>
+              )}
+            </div>
           </div>
 
-          <SlipUploadForm orderNo={props.orderNo} onStatusChange={setStatus} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="sb-panel text-center space-y-3">
+              <h2 className="font-display font-bold text-xl">สแกน QR พร้อมเพย์</h2>
+              <p className="text-xs text-sb-mute">
+                ยอดเงิน {formatBaht(props.totalBaht)} ถูกฝังใน QR Code แล้ว
+              </p>
+              {props.qrDataUrl && (
+                <div className="bg-white p-3 rounded-2xl inline-block">
+                  <img src={props.qrDataUrl} alt="PromptPay QR" className="w-56 h-56" />
+                </div>
+              )}
+              <p className="text-sm font-semibold">{props.promptpayName}</p>
+              <p className="text-xs text-sb-mute">พร้อมเพย์: {props.promptpayId}</p>
+            </div>
+
+            <SlipUploadForm orderNo={props.orderNo} onStatusChange={setStatus} />
+          </div>
         </div>
       )}
 

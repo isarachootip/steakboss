@@ -5,12 +5,15 @@ import { listPublishedGuides } from "./content.service";
 import { lookupOrderForTracking } from "./order.service";
 import { resolveShippingZone, ZONE_LABELS } from "@/domain/shipping";
 import { buildCatalogChatReply } from "@/domain/chatbot-catalog-reply";
-import { ORDER_STATUS_LABELS, isOrderStatus } from "@/domain/order";
 import { formatBaht } from "@/lib/format";
 import { formatGuideChatReply, matchGuideForChatQuery } from "@/domain/content-defaults";
 import { generateBossBotAiReply } from "./adapters/llm.adapter";
 import { pushLineMessage, type LineMessagePayload } from "./adapters/line.adapter";
 import { buildLineMenuFlexIfMatched } from "./chatbot-line-menu";
+import {
+  buildLatestOrderStatusReply,
+  buildLinePendingPaymentReply,
+} from "./line-payment-reply.service";
 
 const HANDOFF_REGEX = /แอดมิน|พนักงาน|เจ้าหน้าที่|คุยกับคน|เคลม|สินค้าเสียหาย|ร้องเรียน/;
 
@@ -23,8 +26,9 @@ async function buildRuleReply(params: {
   text: string;
   channel: "WEB" | "LINE";
   userId?: string;
+  externalId?: string;
 }): Promise<BotReplyOutput> {
-  const { text, channel, userId } = params;
+  const { text, channel, userId, externalId } = params;
   const s = text.toLowerCase();
 
   const lineFlex = await buildLineMenuFlexIfMatched(text, channel);
@@ -44,19 +48,8 @@ async function buildRuleReply(params: {
 
   if (/ติดตาม|สถานะ|พัสดุ|ถึงไหน|track|เช็กออเดอร์/.test(s)) {
     if (userId) {
-      const latest = await db.order.findFirst({
-        where: { userId },
-        orderBy: { createdAt: "desc" },
-        select: { orderNo: true, status: true, totalBaht: true, carrier: true, trackingNo: true },
-      });
-      if (latest) {
-        const label = isOrderStatus(latest.status) ? ORDER_STATUS_LABELS[latest.status] : latest.status;
-        const trackLine = latest.trackingNo ? `\nขนส่ง: ${latest.carrier || "รถเย็น"} เลขพัสดุ ${latest.trackingNo}` : "";
-        const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://steakboss.odmfood.online").replace(/\/$/, "");
-        return {
-          text: `ออเดอร์ล่าสุดของคุณ ${latest.orderNo}\nสถานะ: ${label}${trackLine}\nยอดรวม ${formatBaht(latest.totalBaht)}\nดูรายละเอียด: ${baseUrl}/track?orderNo=${latest.orderNo}`,
-        };
-      }
+      const latestReply = await buildLatestOrderStatusReply({ userId, channel });
+      if (latestReply) return latestReply;
     }
     return { text: 'พิมพ์เลขคำสั่งซื้อและเบอร์ 4 ตัวท้ายได้เลยครับ เช่น "SB261128-AB12 1234"' };
   }
@@ -84,8 +77,18 @@ async function buildRuleReply(params: {
   if (/เก็บ|แช่แข็ง|ฟรีซ/.test(s)) {
     return { text: "เก็บในช่องแช่แข็ง -18°C ครับ ละลายแล้วไม่ควรนำกลับไปแช่แข็งซ้ำ" };
   }
-  if (/จ่าย|โอน|พร้อมเพย์|ปลายทาง|cod/.test(s)) {
-    return { text: `ชำระได้ 2 แบบ: โอนพร้อมเพย์ ${settings.promptpayId} (${settings.promptpayName}) พร้อมส่งสลิปในแชทนี้ได้เลย หรือเก็บเงินปลายทาง (+฿${settings.codFeeBaht}) ครับ` };
+  if (/จ่าย|โอน|พร้อมเพย์|qr|คิวอาร์|ชำระ|สลิป|ปลายทาง|cod/.test(s)) {
+    if (channel === "LINE") {
+      const pendingReply = await buildLinePendingPaymentReply({
+        userId,
+        lineUserId: externalId,
+      });
+      if (pendingReply) return pendingReply;
+      return {
+        text: `การสั่งซื้อผ่าน LINE ชำระผ่าน QR พร้อมเพย์ ${settings.promptpayId} (${settings.promptpayName}) เท่านั้นครับ\nหลังสั่งซื้อระบบจะส่ง QR พร้อมเพย์ให้สแกน และส่งรูปสลิปในแชทนี้เพื่อตรวจสอบก่อนยืนยันออเดอร์ครับ`,
+      };
+    }
+    return { text: `ชำระได้ 2 แบบ: โอนพร้อมเพย์ ${settings.promptpayId} (${settings.promptpayName}) พร้อมแนบสลิป หรือเก็บเงินปลายทาง (+฿${settings.codFeeBaht}) ครับ` };
   }
 
   const products = await listCatalogProducts();
@@ -146,6 +149,7 @@ export async function handleIncomingChatMessage(params: {
     text: cleanContent,
     channel: params.channel,
     userId: params.userId ?? thread.userId ?? undefined,
+    externalId: params.externalId,
   });
   await db.chatMessage.create({ data: { threadId: thread.id, sender: "BOT", content: output.text } });
   return { threadId: thread.id, mode: "BOT" as const, reply: output.text, flexMessages: output.flexMessages };

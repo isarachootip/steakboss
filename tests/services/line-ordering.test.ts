@@ -15,7 +15,8 @@ import {
   handleIncomingLineImage,
   handleLineConfirmDeliveredPostback,
 } from "@/services/line-slip.service";
-import { createOrder } from "@/services/order.service";
+import { createOrder, updateOrderByAdmin } from "@/services/order.service";
+import { reviewOrderSlip } from "@/services/payment.service";
 
 describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, auto-track)", () => {
   it("builds PromptPay QR Flex card and category/product carousels cleanly", () => {
@@ -110,7 +111,39 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
       expect(menuReply.flexMessages?.length).toBe(1);
       expect(menuReply.flexMessages?.[0]?.quickReply?.items.length).toBeGreaterThanOrEqual(5);
 
-      // 2. Customer creates a LINE PromptPay order
+      // 2b. Creating a COD order on LINE channel MUST be rejected (LINE requires QR PromptPay + slip)
+      await expect(
+        createOrder(
+          {
+            items: [{ productId: kp.id, quantity: 1 }],
+            customerName: user.name,
+            customerPhone: `08${String(stamp).slice(-8)}`,
+            customerEmail: "",
+            deliveryMethod: "FACTORY_PICKUP",
+            postalCode: "",
+            addressText: "",
+            paymentMethod: "COD",
+            couponCode: "",
+            note: "",
+            channel: "LINE",
+          },
+          user.id,
+          "CUSTOMER"
+        )
+      ).rejects.toThrow("QR พร้อมเพย์");
+
+      // 2c. Asking payment info on LINE before placing order should NOT advertise COD
+      const payInfoReply = await handleIncomingChatMessage({
+        channel: "LINE",
+        externalId: lineId,
+        customerName: user.name,
+        userId: user.id,
+        content: "จ่ายเงินยังไง",
+      });
+      expect(payInfoReply.reply).toContain("พร้อมเพย์");
+      expect(payInfoReply.reply).not.toContain("เก็บเงินปลายทาง");
+
+      // 3. Customer creates a LINE PromptPay order (must stay PENDING_PAYMENT & not deduct stock)
       const order = await createOrder(
         {
           items: [{ productId: kp.id, quantity: 1 }],
@@ -129,8 +162,28 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
         "CUSTOMER"
       );
       orderId = order.id;
+      expect(order.status).toBe("PENDING_PAYMENT");
+      expect(order.stockDeducted).toBe(false);
 
-      // 3. Typing "เช็กสถานะพัสดุ" auto-tracks latest order for LINE user
+      // Admin MUST NOT be able to mark PENDING_PAYMENT as PAID without a verified slip
+      await expect(
+        updateOrderByAdmin(order.orderNo, { status: "PAID" }, "test-admin")
+      ).rejects.toThrow();
+
+      // Asking for QR / payment in LINE while order is PENDING_PAYMENT returns PromptPay QR Flex card
+      const qrReply = await handleIncomingChatMessage({
+        channel: "LINE",
+        externalId: lineId,
+        customerName: user.name,
+        userId: user.id,
+        content: "ขอ QR ชำระเงิน",
+      });
+      expect(qrReply.flexMessages?.length).toBe(1);
+      expect(JSON.stringify(qrReply.flexMessages?.[0])).toContain(
+        `/api/store/qr/${order.orderNo}.png`
+      );
+
+      // 3b. Typing "เช็กสถานะพัสดุ" auto-tracks latest PENDING_PAYMENT order AND includes QR Flex card
       const trackReply = await handleIncomingChatMessage({
         channel: "LINE",
         externalId: lineId,
@@ -139,6 +192,9 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
         content: "เช็กสถานะพัสดุ",
       });
       expect(trackReply.reply).toContain(order.orderNo);
+      expect(JSON.stringify(trackReply.flexMessages?.[0])).toContain(
+        `/api/store/qr/${order.orderNo}.png`
+      );
 
       // 4. Customer sends slip image directly in LINE chat
       const sampleImg = await sharp({
@@ -158,16 +214,53 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
       expect(slipRes.orderNo).toBe(order.orderNo);
       expect(slipRes.orderStatus).toBe("SLIP_SUBMITTED");
 
-      // Duplicate image sent again must be rejected cleanly
-      const dupRes = await handleIncomingLineImage({
-        lineUserId: lineId,
-        customerName: user.name,
-        userId: user.id,
-        messageId: `msg-dup-${stamp}`,
-        downloadFn: async () => ({ buffer: sampleImg, contentType: "image/jpeg" }),
-        uploadDir: tmpUploadDir,
+      // Even after slip is submitted (pending review), updateOrderByAdmin cannot skip slip approval
+      await expect(
+        updateOrderByAdmin(order.orderNo, { status: "PAID" }, "test-admin")
+      ).rejects.toThrow("อนุมัติสลิป");
+
+      // Approving the submitted slip via reviewOrderSlip confirms payment as PAID
+      const pendingPayment = await db.payment.findFirstOrThrow({
+        where: { orderId: order.id, status: "PENDING" },
       });
-      expect(dupRes.reply).toContain("ถูกใช้งานในระบบไปแล้ว");
+      const approved = await reviewOrderSlip(
+        order.orderNo,
+        { paymentId: pendingPayment.id, decision: "APPROVE", rejectReason: "" },
+        "test-admin"
+      );
+      expect(approved.orderStatus).toBe("PAID");
+
+      // Duplicate image sent again must be rejected cleanly (order is now PAID -> not pending)
+      const secondOrder = await createOrder(
+        {
+          items: [{ productId: kp.id, quantity: 1 }],
+          customerName: user.name,
+          customerPhone: `08${String(stamp).slice(-8)}`,
+          customerEmail: "",
+          deliveryMethod: "FACTORY_PICKUP",
+          postalCode: "",
+          addressText: "",
+          paymentMethod: "PROMPTPAY",
+          couponCode: "",
+          note: "",
+          channel: "LINE",
+        },
+        user.id,
+        "CUSTOMER"
+      );
+      try {
+        const dupRes = await handleIncomingLineImage({
+          lineUserId: lineId,
+          customerName: user.name,
+          userId: user.id,
+          messageId: `msg-dup-${stamp}`,
+          downloadFn: async () => ({ buffer: sampleImg, contentType: "image/jpeg" }),
+          uploadDir: tmpUploadDir,
+        });
+        expect(dupRes.reply).toContain("ถูกใช้งานในระบบไปแล้ว");
+      } finally {
+        await db.order.deleteMany({ where: { id: secondOrder.id } });
+      }
 
       // 5. After admin marks SHIPPED, customer taps "ยืนยันได้รับสินค้าแล้ว" postback
       await db.order.update({ where: { id: order.id }, data: { status: "SHIPPED" } });
@@ -177,7 +270,14 @@ describe("Hybrid LINE ordering (Flex menu, chat slip upload, confirm delivered, 
       expect(afterConfirm.status).toBe("DELIVERED");
     } finally {
       await fs.rm(tmpUploadDir, { recursive: true, force: true });
-      if (orderId) await db.order.deleteMany({ where: { id: orderId } });
+      if (orderId) {
+        const latest = await db.order.findUnique({ where: { id: orderId } });
+        if (latest?.stockDeducted) {
+          await db.product.update({ where: { id: kp.id }, data: { stockQty: { increment: 1 } } });
+          await db.stockMovement.deleteMany({ where: { orderNo: latest.orderNo } });
+        }
+        await db.order.deleteMany({ where: { id: orderId } });
+      }
       await db.chatThread.deleteMany({ where: { externalId: lineId } });
       if (userId) await db.user.deleteMany({ where: { id: userId } });
     }

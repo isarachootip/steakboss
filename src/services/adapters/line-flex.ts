@@ -114,11 +114,13 @@ export function buildPromptPayOrderFlexMessage(params: {
   qrImageUrl: string;
   payUrl: string;
   trackUrl: string;
+  quickReply?: LineQuickReply;
 }): LineFlexBubble {
   const isHttpsQr = params.qrImageUrl.startsWith("https://");
   return {
     type: "flex",
-    altText: `ชำระเงิน ${params.orderNo} ยอด ฿${params.totalBaht.toLocaleString("th-TH")}`,
+    altText: `รอชำระเงิน ${params.orderNo} ยอด ฿${params.totalBaht.toLocaleString("th-TH")}`,
+    ...(params.quickReply ? { quickReply: params.quickReply } : {}),
     contents: {
       type: "bubble",
       header: {
@@ -126,7 +128,7 @@ export function buildPromptPayOrderFlexMessage(params: {
         layout: "vertical",
         backgroundColor: "#0b0a09",
         contents: [
-          { type: "text", text: "STEAKBOSS · พร้อมเพย์", color: "#d4af37", weight: "bold", size: "sm" },
+          { type: "text", text: "STEAKBOSS · รอชำระเงิน (QR พร้อมเพย์)", color: "#d4af37", weight: "bold", size: "xs" },
           { type: "text", text: `ยอดโอน ฿${params.totalBaht.toLocaleString("th-TH")}`, color: "#f8f3e8", weight: "bold", size: "xl" },
         ],
       },
@@ -147,12 +149,13 @@ export function buildPromptPayOrderFlexMessage(params: {
         layout: "vertical",
         spacing: "sm",
         contents: [
+          { type: "text", text: "สถานะ: รอชำระเงิน (ยังไม่ยืนยันออเดอร์)", weight: "bold", size: "xs", color: "#b45309", wrap: true },
           { type: "text", text: `เลขคำสั่งซื้อ: ${params.orderNo}`, weight: "bold", size: "sm" },
           { type: "text", text: `พร้อมเพย์: ${params.promptpayId}`, size: "sm" },
           { type: "text", text: `ชื่อบัญชี: ${params.promptpayName}`, size: "sm", color: "#444444" },
           {
             type: "text",
-            text: "โอนเสร็จแล้วส่งรูปสลิปเข้ามาในแชทนี้ได้เลย ระบบจะตรวจสอบและตัดสต็อกให้ทันทีครับ",
+            text: "สแกน QR ชำระเงินแล้วส่งรูปสลิปเข้ามาในแชทนี้ได้เลย ระบบจะตรวจสอบสลิปก่อนยืนยันออเดอร์และตัดสต็อกให้ครับ",
             wrap: true,
             size: "xs",
             color: "#15803d",
@@ -169,7 +172,7 @@ export function buildPromptPayOrderFlexMessage(params: {
             type: "button",
             style: "primary",
             color: "#c99e2e",
-            action: { type: "uri", label: "ดู QR / แนบสลิปบนเว็บ", uri: params.payUrl },
+            action: { type: "uri", label: "เปิดหน้า QR / แนบสลิป", uri: params.payUrl },
           },
           {
             type: "button",

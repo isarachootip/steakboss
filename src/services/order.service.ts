@@ -1,6 +1,11 @@
 import { db } from "@/lib/db";
 import { expandStockDeductions } from "@/domain/inventory";
-import { generateOrderNo, normalizePhone, type OrderStatus } from "@/domain/order";
+import {
+  generateOrderNo,
+  isPaymentMethodAllowedForChannel,
+  normalizePhone,
+  type OrderStatus,
+} from "@/domain/order";
 import { saveDefaultCustomerAddressInTx } from "./customer-address.service";
 import { notifyOrderStatus } from "./order-lifecycle.service";
 import { quoteCart } from "./quote.service";
@@ -21,6 +26,11 @@ export async function createOrder(
 ) {
   const phone = normalizePhone(input.customerPhone);
   if (phone.length < 9) throw new Error("กรุณากรอกเบอร์โทรศัพท์ให้ถูกต้อง");
+  if (!isPaymentMethodAllowedForChannel(input.channel, input.paymentMethod)) {
+    throw new Error(
+      "การสั่งซื้อผ่าน LINE รองรับเฉพาะการโอนชำระผ่าน QR พร้อมเพย์และตรวจสอบสลิปก่อนยืนยันเท่านั้น"
+    );
+  }
   if (input.deliveryMethod === "COLD_CHAIN" && !input.addressText.trim()) {
     throw new Error("กรุณากรอกที่อยู่สำหรับจัดส่งรถเย็น");
   }

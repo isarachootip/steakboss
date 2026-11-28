@@ -31,6 +31,8 @@ export interface AdminOrderRow {
   }>;
 }
 
+const SLIP_GATED_STATUSES: readonly OrderStatus[] = ["PAID", "CONFIRMED", "PACKING", "SHIPPED", "DELIVERED"];
+
 export function OrderDetailCard({
   order: o,
   userRole,
@@ -40,13 +42,11 @@ export function OrderDetailCard({
   order: AdminOrderRow;
   userRole: string;
   onSave: (orderNo: string, formEl: HTMLFormElement) => Promise<void>;
-  onReviewSlip: (
-    orderNo: string,
-    paymentId: string,
-    decision: "APPROVE" | "REJECT"
-  ) => Promise<void>;
+  onReviewSlip: (orderNo: string, paymentId: string, decision: "APPROVE" | "REJECT") => Promise<void>;
 }) {
   const pendingSlip = o.payments.find((p) => p.status === "PENDING");
+  const hasVerifiedSlip = o.payments.some((p) => p.status === "VERIFIED");
+  const requiresSlipBeforeConfirm = o.paymentMethod === "PROMPTPAY" && !hasVerifiedSlip;
 
   return (
     <details className="sb-panel">
@@ -145,31 +145,26 @@ export function OrderDetailCard({
         >
           <label className="block text-xs font-semibold">
             สถานะคำสั่งซื้อ
-            <select
-              name="status"
-              defaultValue={o.status}
-              className="sb-input min-h-[38px] text-xs mt-1"
-            >
+            <select name="status" defaultValue={o.status} className="sb-input min-h-[38px] text-xs mt-1">
               {ORDER_STATUSES.map((s) => (
-                <option key={s} value={s}>
+                <option
+                  key={s}
+                  value={s}
+                  disabled={requiresSlipBeforeConfirm && s !== o.status && SLIP_GATED_STATUSES.includes(s)}
+                >
                   {ORDER_STATUS_LABELS[s]}
                 </option>
               ))}
             </select>
+            {requiresSlipBeforeConfirm && (
+              <span className="block text-[11px] text-amber-300 mt-1 font-normal">
+                ต้องมีสลิปแนบและกดอนุมัติสลิปก่อนยืนยันเป็นชำระเงินแล้ว
+              </span>
+            )}
           </label>
           <div className="grid grid-cols-2 gap-2">
-            <input
-              name="carrier"
-              defaultValue={o.carrier}
-              placeholder="ขนส่ง (เช่น Inter)"
-              className="sb-input min-h-[38px] text-xs"
-            />
-            <input
-              name="trackingNo"
-              defaultValue={o.trackingNo}
-              placeholder="เลขพัสดุ"
-              className="sb-input min-h-[38px] text-xs"
-            />
+            <input name="carrier" defaultValue={o.carrier} placeholder="ขนส่ง (เช่น Inter)" className="sb-input min-h-[38px] text-xs" />
+            <input name="trackingNo" defaultValue={o.trackingNo} placeholder="เลขพัสดุ" className="sb-input min-h-[38px] text-xs" />
           </div>
           {o.paymentMethod === "COD" && userRole !== "PACKER" && (
             <label className="flex items-center gap-2 text-xs">

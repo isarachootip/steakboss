@@ -83,18 +83,9 @@ export async function submitOrderSlip(
   }
 
   const paymentStatus =
-    result.status === "VERIFIED"
-      ? "VERIFIED"
-      : result.status === "REJECTED"
-        ? "REJECTED"
-        : "PENDING";
-
+    result.status === "VERIFIED" ? "VERIFIED" : result.status === "REJECTED" ? "REJECTED" : "PENDING";
   const nextOrderStatus =
-    result.status === "VERIFIED"
-      ? "PAID"
-      : result.status === "REJECTED"
-        ? "PENDING_PAYMENT"
-        : "SLIP_SUBMITTED";
+    result.status === "VERIFIED" ? "PAID" : result.status === "REJECTED" ? "PENDING_PAYMENT" : "SLIP_SUBMITTED";
 
   const payment = await db.$transaction(async (tx) => {
     const p = await tx.payment.create({
@@ -149,8 +140,16 @@ export async function reviewOrderSlip(
   input: z.infer<typeof reviewSlipSchema>,
   adminId: string
 ) {
-  const order = await db.order.findUnique({ where: { orderNo } });
+  const order = await db.order.findUnique({
+    where: { orderNo },
+    include: { payments: { where: { id: input.paymentId }, take: 1 } },
+  });
   if (!order) throw new Error("ไม่พบคำสั่งซื้อนี้");
+  const targetPayment = order.payments[0];
+  if (!targetPayment) throw new Error("ไม่พบรายการสลิปของคำสั่งซื้อนี้");
+  if (input.decision === "APPROVE" && !targetPayment.slipUrl?.trim()) {
+    throw new Error("ไม่พบรูปสลิปสำหรับตรวจสอบ ไม่สามารถอนุมัติการชำระเงินได้");
+  }
 
   const nextStatus = input.decision === "APPROVE" ? "PAID" : "PENDING_PAYMENT";
   await db.$transaction(async (tx) => {

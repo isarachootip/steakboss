@@ -23,7 +23,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 const ALLOWED_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
-  PENDING_PAYMENT: ["SLIP_SUBMITTED", "PAID", "CANCELLED"],
+  PENDING_PAYMENT: ["SLIP_SUBMITTED", "CANCELLED"],
   SLIP_SUBMITTED: ["PAID", "PENDING_PAYMENT", "CANCELLED"],
   CONFIRMED: ["PACKING", "SHIPPED", "CANCELLED"],
   PAID: ["PACKING", "SHIPPED", "CANCELLED"],
@@ -32,6 +32,14 @@ const ALLOWED_TRANSITIONS: Record<OrderStatus, readonly OrderStatus[]> = {
   DELIVERED: [],
   CANCELLED: [],
 };
+
+export function isPaymentMethodAllowedForChannel(
+  channel: "WEB" | "LINE",
+  paymentMethod: "PROMPTPAY" | "COD"
+): boolean {
+  if (channel === "LINE") return paymentMethod === "PROMPTPAY";
+  return true;
+}
 
 export function isOrderStatus(value: string): value is OrderStatus {
   return (ORDER_STATUSES as readonly string[]).includes(value);

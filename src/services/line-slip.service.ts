@@ -61,12 +61,18 @@ export async function handleIncomingLineImage(params: LineImageHandlerParams) {
   });
 
   const now = new Date();
+  const ownerFilters = [
+    { user: { lineUserId: params.lineUserId } },
+    ...(params.userId ? [{ userId: params.userId }] : []),
+  ];
   const pendingOrder = await db.order.findFirst({
     where: {
       paymentMethod: "PROMPTPAY",
       status: { in: ["PENDING_PAYMENT", "SLIP_SUBMITTED"] },
-      OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
-      user: { lineUserId: params.lineUserId },
+      AND: [
+        { OR: ownerFilters },
+        { OR: [{ expiresAt: null }, { expiresAt: { gt: now } }] },
+      ],
     },
     orderBy: { createdAt: "desc" },
     select: { id: true, orderNo: true, totalBaht: true },
@@ -90,7 +96,7 @@ export async function handleIncomingLineImage(params: LineImageHandlerParams) {
     } else if (result.orderStatus === "PENDING_PAYMENT") {
       reply = `สลิปสำหรับออเดอร์ ${pendingOrder.orderNo} ไม่ผ่านการตรวจสอบครับ\nเหตุผล: ${result.reason || "ยอดเงินหรือบัญชีผู้รับไม่ตรง"}\nกรุณาตรวจสอบแล้วส่งภาพสลิปใหม่อีกครั้งได้เลยครับ`;
     } else {
-      reply = `ได้รับสลิปสำหรับออเดอร์ ${pendingOrder.orderNo} (ยอด ฿${pendingOrder.totalBaht.toLocaleString("th-TH")}) เรียบร้อยแล้วครับ\nแอดมินจะตรวจสอบและยืนยันตัดสต็อกให้เร็วที่สุดครับ`;
+      reply = `ได้รับสลิปสำหรับออเดอร์ ${pendingOrder.orderNo} (ยอด ฿${pendingOrder.totalBaht.toLocaleString("th-TH")}) เรียบร้อยแล้วครับ\nสถานะปัจจุบัน: รอตรวจสอบสลิป (ยังไม่ยืนยันออเดอร์) เมื่อตรวจสอบผ่านระบบจะยืนยันคำสั่งซื้อและตัดสต็อกให้ทันทีครับ`;
     }
     await db.chatMessage.create({ data: { threadId: thread.id, sender: "BOT", content: reply } });
     return { threadId: thread.id, reply, orderNo: pendingOrder.orderNo, orderStatus: result.orderStatus };

@@ -2,10 +2,12 @@ import { db } from "@/lib/db";
 import { ORDER_STATUS_LABELS, type OrderStatus } from "@/domain/order";
 import {
   buildOrderFlexMessage,
-  buildPromptPayOrderFlexMessage,
   pushLineMessage,
 } from "./adapters/line.adapter";
-import { getStoreSettings } from "./settings.service";
+import {
+  buildPromptPayFlexForOrder,
+  resolvePublicHttpsBaseUrl,
+} from "./line-payment-reply.service";
 
 export async function notifyOrderStatus(
   orderNo: string,
@@ -17,7 +19,7 @@ export async function notifyOrderStatus(
   });
   if (!order) return;
 
-  const baseUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+  const baseUrl = resolvePublicHttpsBaseUrl();
   const trackUrl = `${baseUrl}/track?orderNo=${encodeURIComponent(order.orderNo)}`;
   const detail =
     status === "SHIPPED" && order.trackingNo
@@ -26,18 +28,12 @@ export async function notifyOrderStatus(
 
   if (order.user?.lineUserId) {
     if (status === "PENDING_PAYMENT" && order.paymentMethod === "PROMPTPAY") {
-      const settings = await getStoreSettings();
-      await pushLineMessage(order.user.lineUserId, [
-        buildPromptPayOrderFlexMessage({
-          orderNo: order.orderNo,
-          totalBaht: order.totalBaht,
-          promptpayId: settings.promptpayId,
-          promptpayName: settings.promptpayName,
-          qrImageUrl: `${baseUrl}/api/store/qr/${encodeURIComponent(order.orderNo)}.png`,
-          payUrl: `${baseUrl}/orders/${encodeURIComponent(order.orderNo)}/pay`,
-          trackUrl,
-        }),
-      ]);
+      const qrFlex = await buildPromptPayFlexForOrder({
+        orderNo: order.orderNo,
+        totalBaht: order.totalBaht,
+        includeQuickReply: true,
+      });
+      await pushLineMessage(order.user.lineUserId, [qrFlex]);
     } else {
       await pushLineMessage(order.user.lineUserId, [
         buildOrderFlexMessage({

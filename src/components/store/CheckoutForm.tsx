@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "./CartProvider";
-import { formatBaht } from "@/lib/format";
+import { CheckoutPaymentSection } from "./CheckoutPaymentSection";
 import { CheckoutSummary, type QuoteSummary } from "./CheckoutSummary";
 
 interface MeResponse {
@@ -27,6 +27,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
   const [addressText, setAddressText] = useState("");
   const [postalCode, setPostalCode] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"PROMPTPAY" | "COD">("PROMPTPAY");
+  const [isLineChannel, setIsLineChannel] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [note, setNote] = useState("");
   const [quote, setQuote] = useState<QuoteSummary | null>(null);
@@ -36,6 +37,12 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    try {
+      if (localStorage.getItem("sb_order_channel") === "LINE") {
+        setIsLineChannel(true);
+        setPaymentMethod("PROMPTPAY");
+      }
+    } catch {}
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d: MeResponse) => {
@@ -77,17 +84,15 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
     setError(null);
     setSubmitting(true);
     try {
-      const orderChannel =
-        typeof window !== "undefined" && localStorage.getItem("sb_order_channel") === "LINE"
-          ? "LINE"
-          : "WEB";
+      const orderChannel = isLineChannel ? "LINE" : "WEB";
+      const effectivePayment = isLineChannel ? "PROMPTPAY" : paymentMethod;
       const res = await fetch("/api/store/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
           customerName: name, customerPhone: phone, customerEmail: email,
-          deliveryMethod, addressText, postalCode, paymentMethod, couponCode, note, channel: orderChannel,
+          deliveryMethod, addressText, postalCode, paymentMethod: effectivePayment, couponCode, note, channel: orderChannel,
         }),
       });
       const data = (await res.json()) as { order?: { orderNo: string }; error?: string };
@@ -103,6 +108,12 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
       setSubmitting(false);
     }
   }
+
+  const submitLabel = submitting
+    ? "กำลังบันทึกคำสั่งซื้อ..."
+    : isLineChannel || paymentMethod === "PROMPTPAY"
+      ? "สร้างออเดอร์และรับ QR ชำระเงิน"
+      : "ยืนยันคำสั่งซื้อ (เก็บเงินปลายทาง)";
 
   if (items.length === 0) {
     return (
@@ -165,16 +176,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <label className={`p-3.5 rounded-xl border cursor-pointer flex gap-3 ${paymentMethod === "PROMPTPAY" ? "border-sb-pink bg-sb-pink/10" : "border-sb-line"}`}>
-            <input type="radio" checked={paymentMethod === "PROMPTPAY"} onChange={() => setPaymentMethod("PROMPTPAY")} className="mt-1 accent-sb-pink" />
-            <span className="text-sm"><b>โอนพร้อมเพย์ QR</b><span className="block text-xs text-sb-mute">QR ตามยอดจริง + แนบสลิป</span></span>
-          </label>
-          <label className={`p-3.5 rounded-xl border cursor-pointer flex gap-3 ${paymentMethod === "COD" ? "border-sb-pink bg-sb-pink/10" : "border-sb-line"}`}>
-            <input type="radio" checked={paymentMethod === "COD"} onChange={() => setPaymentMethod("COD")} className="mt-1 accent-sb-pink" />
-            <span className="text-sm"><b>เก็บเงินปลายทาง (COD)</b><span className="block text-xs text-sb-mute">+{formatBaht(codFeeBaht)}</span></span>
-          </label>
-        </div>
+        <CheckoutPaymentSection isLineChannel={isLineChannel} paymentMethod={paymentMethod} codFeeBaht={codFeeBaht} onChange={setPaymentMethod} />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <label className="space-y-1.5 text-sm font-semibold">
@@ -190,9 +192,7 @@ export function CheckoutForm({ codFeeBaht }: { codFeeBaht: number }) {
         </div>
 
         {error && <p className="text-sm text-red-400 bg-red-950/50 border border-red-800/50 rounded-xl px-4 py-2.5">{error}</p>}
-        <button type="submit" disabled={submitting} className="sb-btn w-full">
-          {submitting ? "กำลังบันทึกคำสั่งซื้อ..." : "ยืนยันคำสั่งซื้อ"}
-        </button>
+        <button type="submit" disabled={submitting} className="sb-btn w-full">{submitLabel}</button>
       </form>
       <CheckoutSummary items={items} subtotalBaht={subtotalBaht} quote={quote} />
     </div>
